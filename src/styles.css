@@ -602,3 +602,9 @@ html, body, #app, #canvas, #preview, .canvas, .preview, .pane {
   font-size: 1.02em; font-weight: 600; line-height: 1.35;
   margin: .3em 0 .15em; word-break: break-word;
 }
+
+/* 连线工具栏里的档位数字：做大一点，改一档看得出来 */
+.tool-val.big {
+  font-size: 13px; font-weight: 600; min-width: 18px; color: var(--text);
+  background: var(--hover); border-radius: 4px; line-height: 18px; text-align: center;
+}
