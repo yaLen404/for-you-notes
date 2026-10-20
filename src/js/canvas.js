@@ -320,7 +320,7 @@ export class Canvas {
     const body = renderMarkdown(note.content || '', exists);
     return `<div class="${cls.join(' ')}" data-id="${note.id}" style="${style}">
       <div class="card-inner">
-        <div class="card-head">${ICON}<span class="card-title">${escapeHtml(note.title || '未命名')}</span><span class="card-open">↗</span></div>
+        <div class="card-head">${ICON}<span class="card-title">${escapeHtml(note.title || '未命名')}</span></div>
         <div class="card-body">${body}</div>
       </div>
       <div class="handle" data-corner="nw"></div><div class="handle" data-corner="ne"></div>

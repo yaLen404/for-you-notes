@@ -157,8 +157,6 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
 .card.selected .card-head { border-bottom-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
 .card-icon { width: 11px; height: 13px; flex: 0 0 auto; opacity: .75; }
 .card-title { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.card-open { color: var(--faint); font-size: 12px; opacity: 0; }
-.card.hover .card-open { opacity: 1; }
 .card-body {
   flex: 1; min-height: 0; overflow: hidden; padding: 10px 12px;
   font-size: 14px; line-height: 1.5; color: var(--text);
