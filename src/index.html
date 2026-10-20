@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: fyn-img:; font-src 'self' data:;">
+  <title>For You Notes</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <script src="vendor/katex/katex.min.js"></script>
+</head>
+<body>
+  <div class="titlebar" id="titlebar">
+    <div class="brand" title="For You Notes"><span class="logo">◈</span></div>
+    <nav class="menubar" id="menubar">
+      <button class="menubar-btn" data-menu="file">文件</button>
+      <button class="menubar-btn" data-menu="view">视图</button>
+      <button class="menubar-btn" data-menu="help">帮助</button>
+    </nav>
+    <div class="titlebar-drag"></div>
+    <div class="winbtns">
+      <button class="winbtn" id="btnCollapse" title="最小化">─</button>
+      <button class="winbtn" id="btnMax" title="最大化 / 还原">▢</button>
+      <button class="winbtn danger" id="btnClose" title="关闭（笔记已自动保存）">✕</button>
+    </div>
+  </div>
+
+  <main class="body" id="body">
+    <section class="pane pane-left" id="leftPane">
+      <header class="pane-head">
+        <button class="graph-btn" id="graphBtn"><span id="graphName">知识体系图</span><span class="caret">▾</span></button>
+        <div class="head-right">
+          <label class="search" id="searchWrap">
+            <span class="search-icon">⌕</span>
+            <input id="searchInput" placeholder="搜索" spellcheck="false" autocomplete="off">
+          </label>
+          <button class="toggle-btn" id="focusBtn">只看相连</button>
+        </div>
+      </header>
+
+      <div class="canvas" id="canvas" tabindex="-1">
+        <div class="world" id="world">
+          <svg class="edges" id="edges" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+                      markerWidth="6" markerHeight="6" orient="auto-start-reverse"
+                      markerUnits="strokeWidth">
+                <path d="M0,0.6 L9,5 L0,9.4 z" fill="#5a5a5a"></path>
+              </marker>
+              <marker id="arrow-sel" viewBox="0 0 10 10" refX="9" refY="5"
+                      markerWidth="6" markerHeight="6" orient="auto-start-reverse"
+                      markerUnits="strokeWidth">
+                <path d="M0,0.6 L9,5 L0,9.4 z" fill="#a882ff"></path>
+              </marker>
+            </defs>
+            <g id="edgeLayer"></g>
+            <g id="edgeHitLayer"></g>
+          </svg>
+          <div class="cards" id="cards"></div>
+        </div>
+
+        <div class="canvas-empty" id="canvasEmpty" hidden>
+          <strong>这张图还没有笔记</strong>
+          <span>按 Ctrl+N 新建，或右键画布空白处「在这里新建笔记」</span>
+        </div>
+
+        <div class="node-toolbar" id="nodeToolbar" hidden>
+          <div class="swatches" id="swatches"></div>
+          <button class="tool-btn" id="toolClear" title="清除颜色">⊘</button>
+          <div class="sep"></div>
+          <button class="tool-btn wide" id="toolEdit">编辑</button>
+          <button class="tool-btn" id="toolNew" title="从这篇新建并链接">＋</button>
+          <button class="tool-btn wide" id="toolDelete">删除</button>
+        </div>
+
+        <div class="pill left-pill">
+          <button class="pill-btn" id="btnTidy" title="整理布局（可撤销）">⌗</button>
+          <button class="pill-btn" id="btnUndo" title="撤销 Ctrl+Z">↺</button>
+          <button class="pill-btn" id="btnRedo" title="重做 Ctrl+Y">↻</button>
+          <div class="pill-sep"></div>
+          <span class="pill-label" id="statsLabel"></span>
+        </div>
+
+        <div class="pill zoom-pill">
+          <button class="pill-btn" id="btnZoomOut" title="缩小画布">−</button>
+          <button class="pill-btn zoom-value" id="btnZoomReset" title="点一下回到 100%">100%</button>
+          <button class="pill-btn" id="btnZoomIn" title="放大画布">＋</button>
+          <div class="pill-sep"></div>
+          <button class="pill-btn" id="btnFit" title="适应窗口 F">⤢</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="splitter" id="splitter"><span class="splitter-line"></span></div>
+
+    <section class="pane pane-right" id="rightPane">
+      <header class="note-head">
+        <div class="note-accent" id="noteAccent"></div>
+        <input class="note-title" id="noteTitle" spellcheck="false" autocomplete="off" placeholder="未命名">
+      </header>
+      <div class="note-body" id="noteBody">
+        <div class="preview" id="preview" tabindex="-1" hidden></div>
+        <div class="empty-hint" id="emptyHint" hidden>还没有选中笔记<br><span>点一下左边的卡片就能打开它 · Ctrl+N 新建 · 右键空白处也能新建</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="statusbar">
+    <span class="status-left" id="statusLeft"></span>
+    <span class="status-right" id="statusRight">字号 100%</span>
+  </footer>
+
+  <div class="resize-layer" id="resizeLayer">
+    <div data-edge="n"></div><div data-edge="s"></div>
+    <div data-edge="w"></div><div data-edge="e"></div>
+    <div data-edge="nw"></div><div data-edge="ne"></div>
+    <div data-edge="sw"></div><div data-edge="se"></div>
+  </div>
+
+  <div class="popover" id="popover" hidden></div>
+  <div class="popover submenu" id="submenu" hidden></div>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

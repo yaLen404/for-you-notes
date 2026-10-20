@@ -1,0 +1,596 @@
+/* For You Notes · Obsidian 深色主题的实测配色 */
+:root {
+  --bg: #161616;            /* 画布（--background-secondary） */
+  --card: #1e1e1e;          /* 卡片 / 右栏（--background-primary） */
+  --head: #262626;          /* 卡片标题条 */
+  --line: #333333;          /* 描边 */
+  --line-soft: #2a2a2a;
+  --text: #dcddde;
+  --muted: #a3a3a3;
+  --faint: #7a7a7a;
+  --accent: #7c3aed;        /* 交互强调色 */
+  --accent-soft: #a882ff;
+  --caret: #c9b6ff;         /* 文本光标：亮紫，深色背景上也一眼看得见 */
+  --dot: #333333;
+  --hover: #363636;
+  --panel: #262626;
+  --radius: 8px;
+  --titlebar-h: 38px;
+  --status-h: 24px;
+}
+
+* { box-sizing: border-box; }
+
+/* hidden 属性必须压过下面那些 display:grid 的规则 */
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 13px;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+input, textarea { font: inherit; color: inherit; background: none; border: 0; outline: none; }
+
+/* ---------------------------------------------------------------- 标题栏 */
+.titlebar {
+  height: var(--titlebar-h);
+  display: flex;
+  align-items: center;
+  background: var(--card);
+  border-bottom: 1px solid var(--line-soft);
+  padding: 0 4px 0 12px;
+  position: relative;
+  z-index: 40;
+}
+.brand { display: flex; align-items: center; justify-content: center; padding: 0 12px 0 6px; }
+.brand .logo { color: var(--accent-soft); font-size: 16px; line-height: 1; }
+
+.menubar { display: flex; gap: 2px; }
+.menubar-btn {
+  padding: 5px 9px; border-radius: 5px; color: var(--muted); font-size: 13px;
+}
+.menubar-btn:hover, .menubar-btn.open { background: var(--hover); color: var(--text); }
+
+/* 标题栏中间不再显示图名，只留一段可拖动的空白 */
+.titlebar-drag { flex: 1; height: 100%; }
+
+.winbtns { display: flex; }
+.winbtn {
+  width: 38px; height: 30px; border-radius: 5px; color: var(--muted);
+  display: grid; place-items: center; font-size: 13px;
+}
+.winbtn:hover { background: var(--hover); color: var(--text); }
+.winbtn.danger:hover { background: #fb464c; color: #fff; }
+
+/* ---------------------------------------------------------------- 主区域 */
+.body { display: flex; height: calc(100vh - var(--titlebar-h) - var(--status-h)); min-height: 0; }
+.pane { min-width: 0; display: flex; flex-direction: column; }
+.pane-left { background: var(--bg); }
+/* 必须 flex:1：右栏是"剩下的全部"，否则内容为空时它会缩成一条，
+   窗口右边就会留下一大片黑（这就是"右边这个大的黑边"） */
+.pane-right { flex: 1 1 auto; min-width: 0; background: var(--card); }
+
+.splitter { width: 5px; flex: 0 0 5px; cursor: col-resize; display: grid; place-items: center; }
+.splitter-line { width: 1px; height: 100%; background: #ffffff; opacity: .55; }
+.splitter:hover .splitter-line { opacity: 1; }
+
+/* ---------------------------------------------------------------- 左栏头 */
+.pane-head {
+  height: 42px; flex: 0 0 42px; display: flex; align-items: center; gap: 6px;
+  padding: 0 12px;
+}
+.graph-btn {
+  display: flex; align-items: center; gap: 5px; padding: 4px 7px;
+  border-radius: 5px; color: var(--text); font-size: 13px; max-width: 220px;
+}
+.graph-btn:hover { background: var(--hover); }
+.graph-btn .caret { color: var(--faint); font-size: 10px; }
+.ghost-btn { padding: 4px 7px; border-radius: 5px; color: var(--faint); font-size: 12px; }
+.ghost-btn:hover { background: var(--hover); color: var(--text); }
+
+.head-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.search {
+  display: flex; align-items: center; gap: 4px; background: var(--panel);
+  border-radius: 6px; padding: 3px 8px; height: 26px;
+}
+.search:focus-within { box-shadow: 0 0 0 1px var(--accent); }
+.search-icon { color: var(--faint); font-size: 12px; }
+.search input { width: 108px; color: var(--text); font-size: 12px; }
+.search input::placeholder { color: var(--faint); }
+.toggle-btn {
+  height: 26px; padding: 0 9px; border-radius: 6px; background: var(--panel);
+  color: var(--muted); font-size: 12px;
+}
+.toggle-btn:hover { background: var(--hover); }
+.toggle-btn.active { color: #fff; background: color-mix(in srgb, var(--accent) 55%, var(--panel)); }
+
+/* ---------------------------------------------------------------- 画布 */
+.canvas {
+  position: relative; flex: 1; min-height: 0; overflow: hidden;
+  background-color: var(--bg);
+  background-image: radial-gradient(circle, var(--dot) 1px, transparent 1px);
+  background-size: 24px 24px;
+  cursor: default;
+}
+.canvas.panning { cursor: grabbing; }
+
+.world { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform; }
+.cards { position: absolute; left: 0; top: 0; }
+.edges { position: absolute; left: 0; top: 0; overflow: visible; width: 1px; height: 1px; }
+.edges path.edge { fill: none; stroke: #5a5a5a; stroke-width: 1.5; stroke-linecap: round; }
+.edges path.edge.hover { stroke: #a3a3a3; }
+.edges path.edge.selected { stroke: var(--accent-soft); stroke-width: 2.2; }
+.edges path.hit { fill: none; stroke: transparent; stroke-width: 14; cursor: pointer; }
+
+/* 卡片 */
+.card {
+  position: absolute; border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--card); transform-origin: 0 0;
+}
+.card.colored { border-color: var(--c); background: color-mix(in srgb, var(--c) 8%, var(--card)); }
+.card.hover { border-color: color-mix(in srgb, var(--line) 55%, #ffffff); }
+.card.colored.hover { border-color: color-mix(in srgb, var(--c) 75%, #ffffff); }
+.card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+/* 右键时轻轻圈一下落点那张卡片：只是提示，不是"选中" */
+.card.ctx { box-shadow: 0 0 0 2px rgba(255, 255, 255, .26); }
+.card.selected.ctx { box-shadow: 0 0 0 1px var(--accent), 0 0 0 3px rgba(255, 255, 255, .18); }
+.card.dim { opacity: .42; }
+.card-inner {
+  position: absolute; inset: 0; border-radius: 7px; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.card-head {
+  height: 32px; flex: 0 0 32px; display: flex; align-items: center; gap: 7px;
+  padding: 0 10px; background: var(--head);
+  border-bottom: 1px solid var(--line);
+  font-size: 14px; font-weight: 600; color: var(--text);
+}
+.card.colored .card-head { background: color-mix(in srgb, var(--c) 16%, var(--card)); }
+.card.selected .card-head { border-bottom-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.card-icon { width: 11px; height: 13px; flex: 0 0 auto; opacity: .75; }
+.card-title { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.card-open { color: var(--faint); font-size: 12px; opacity: 0; }
+.card.hover .card-open { opacity: 1; }
+.card-body {
+  flex: 1; min-height: 0; overflow: hidden; padding: 10px 12px;
+  font-size: 14px; line-height: 1.5; color: var(--text);
+}
+.card-body > :first-child { margin-top: 0; }
+.card-body > :last-child { margin-bottom: 0; }
+
+/* 手柄与连线圆点（屏幕尺寸恒定：除以 --z） */
+.handle, .dot {
+  position: absolute; border-radius: 2px; box-sizing: border-box;
+  width: calc(8px / var(--z)); height: calc(8px / var(--z));
+  background: #e8e8e8; border: 1px solid var(--bg);
+  transform: translate(-50%, -50%);
+  display: none;
+}
+.card.selected .handle { display: block; }
+.handle[data-corner="nw"] { left: 0; top: 0; cursor: nwse-resize; }
+.handle[data-corner="ne"] { left: 100%; top: 0; cursor: nesw-resize; }
+.handle[data-corner="sw"] { left: 0; top: 100%; cursor: nesw-resize; }
+.handle[data-corner="se"] { left: 100%; top: 100%; cursor: nwse-resize; }
+
+.dot {
+  width: calc(9px / var(--z)); height: calc(9px / var(--z));
+  border-radius: 50%; background: #8a8a8a; border-color: var(--bg);
+}
+.card.hover .dot, .card.selected .dot { display: block; }
+.dot[data-side="n"] { left: 50%; top: 0; cursor: crosshair; }
+.dot[data-side="s"] { left: 50%; top: 100%; cursor: crosshair; }
+.dot[data-side="w"] { left: 0; top: 50%; cursor: crosshair; }
+.dot[data-side="e"] { left: 100%; top: 50%; cursor: crosshair; }
+.dot.hot { background: var(--accent); }
+
+/* 拖拽预览线 */
+.preview-line { position: absolute; height: 1px; background: var(--accent); transform-origin: 0 0; pointer-events: none; }
+
+/* 选中连线时，把两端真正落在哪个"接口"标出来 */
+.edges circle.port {
+  fill: var(--accent); stroke: var(--bg); stroke-width: 1.5; pointer-events: none;
+}
+/* 拖新连线时，目标卡片会亮的那个接口 */
+.preview-dot {
+  position: absolute; width: 11px; height: 11px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 2px rgba(0, 0, 0, .45);
+  transform: translate(-50%, -50%); pointer-events: none; z-index: 5;
+}
+
+/* 对齐参考线 */
+.guide { position: absolute; background: var(--accent-soft); opacity: .9; pointer-events: none; }
+.guide.v { width: 1px; top: 0; bottom: 0; }
+.guide.h { height: 1px; left: 0; right: 0; }
+
+/* ---------------------------------------------------------------- 浮动件 */
+.pill {
+  position: absolute; display: flex; align-items: center; gap: 2px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 3px; box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
+}
+.left-pill { left: 12px; bottom: 12px; }
+.zoom-pill { right: 12px; bottom: 12px; }
+.pill-btn {
+  min-width: 26px; height: 24px; padding: 0 6px; border-radius: 5px;
+  color: var(--muted); font-size: 13px; display: grid; place-items: center;
+}
+.pill-btn:hover { background: var(--hover); color: var(--text); }
+.pill-btn.zoom-value { min-width: 52px; font-size: 12px; }
+.pill-sep { width: 1px; height: 14px; background: var(--line); margin: 0 4px; }
+.pill-label { color: var(--faint); font-size: 12px; padding: 0 6px 0 2px; }
+
+/* 节点工具条 */
+.node-toolbar {
+  position: absolute; display: flex; align-items: center; gap: 3px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 7px;
+  padding: 4px 6px; box-shadow: 0 3px 14px rgba(0, 0, 0, .4); z-index: 20;
+}
+.node-toolbar .swatches { display: flex; gap: 3px; margin-right: 2px; }
+.swatch { width: 14px; height: 14px; border-radius: 50%; border: 1px solid transparent; }
+.swatch:hover { transform: scale(1.15); }
+.swatch.active { box-shadow: 0 0 0 2px var(--text); }
+.tool-btn {
+  min-width: 24px; height: 22px; padding: 0 6px; border-radius: 4px;
+  color: var(--muted); font-size: 12px;
+}
+.tool-btn:hover { background: var(--hover); color: var(--text); }
+.node-toolbar .sep { width: 1px; height: 14px; background: var(--line); margin: 0 4px; }
+
+/* 画布空状态 */
+.canvas-empty {
+  position: absolute; inset: 0; display: grid; place-content: center; gap: 8px;
+  text-align: center; color: var(--faint); pointer-events: none;
+}
+.canvas-empty strong { color: var(--muted); font-size: 15px; font-weight: 600; }
+.canvas-empty span { font-size: 12px; }
+
+/* ---------------------------------------------------------------- 右栏 */
+.note-head {
+  height: 56px; flex: 0 0 56px; display: flex; align-items: center; gap: 12px;
+  padding: 0 16px;
+}
+.note-accent { width: 3px; height: 26px; border-radius: 2px; background: var(--line); flex: 0 0 3px; }
+.note-title {
+  flex: 1; min-width: 0; font-size: 28px; font-weight: 700; letter-spacing: -.01em; color: var(--text);
+}
+.note-title::placeholder { color: var(--faint); }
+
+.note-body { flex: 1; min-height: 0; position: relative; padding: 0 16px 0 10px; }
+.preview {
+  /* 左边只留够列表标记悬挂的宽度（手柄删掉后不再需要 64px 的大留白） */
+  position: absolute; inset: 0; padding: 6px 20px 24px 28px;
+  overflow-y: auto; overflow-x: hidden;
+}
+.empty-hint {
+  position: absolute; inset: 0; display: grid; place-content: center; gap: 6px;
+  text-align: center; color: var(--faint); pointer-events: none; line-height: 1.8;
+}
+.empty-hint span { font-size: 12px; }
+
+/* 底部连接区：压成一条 VSCode 状态栏那样的细线 */
+.note-meta {
+  flex: 0 0 auto; padding: 0 10px; height: 26px;
+  display: flex; align-items: center;
+  border-top: 1px solid var(--line-soft);
+  overflow: hidden;
+}
+.meta-head { display: none; }
+.meta-title, .meta-sum { color: var(--faint); font-size: 11.5px; }
+.chips {
+  display: flex; align-items: center; justify-content: flex-end;
+  width: 100%; height: 100%; overflow: hidden;
+  font-size: 11.5px; color: var(--faint);
+}
+.chip-group {
+  display: flex; align-items: center; gap: 6px;
+  margin: 0; padding: 0 10px; white-space: nowrap;
+  border-right: 1px solid var(--line-soft);
+}
+.chip-group:last-child { border-right: 0; padding-right: 0; }
+/* 最左边那组（画布连接）空间不够时自己收窄，不要硬切掉半个 chip */
+.chip-group:first-child { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+.chip-group:first-child .chip { max-width: 90px; }
+.chip-label { color: var(--faint); font-size: 11.5px; margin: 0; }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 5px;
+  border-radius: 4px; background: transparent; color: var(--muted); font-size: 11.5px;
+  max-width: 160px;
+}
+.chip:hover { background: var(--hover); color: var(--text); }
+.chip .x { color: var(--faint); padding: 0 1px; border-radius: 3px; }
+.chip .x:hover { color: #fb464c; }
+.chip.missing { color: #e9973f; }
+.chip.tag { color: var(--muted); }
+.chip span.text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* 预览里的 Markdown */
+.preview { user-select: text; font-size: 16px; line-height: 1.55; color: var(--text); }
+
+/* 笔记里的图片：界面上只看到图，看不到它存在哪 */
+.note-img {
+  display: block; max-width: 100%; max-height: 68vh; margin: 10px 0;
+  border-radius: 6px; background: var(--panel); border: 1px solid var(--line-soft);
+}
+.preview .note-img { cursor: default; }
+.card-body .note-img { max-height: 140px; margin: 4px 0; border-radius: 4px; }
+
+/* LaTeX 公式（本地 KaTeX） */
+.math-block { margin: 10px 0; overflow-x: auto; overflow-y: hidden; }
+.math-block .katex-display { margin: 0; }
+.katex { font-size: 1.05em; }
+.math-fallback {
+  font-family: Consolas, "Cascadia Mono", monospace; font-size: .92em;
+  background: var(--panel); border-radius: 5px; padding: 8px 10px; margin: 10px 0;
+  color: var(--muted); overflow-x: auto;
+}
+.card-body .math-block { margin: 2px 0; }
+.card-body .katex { font-size: 1em; }
+.preview h1, .preview h2, .preview h3 { font-weight: 600; line-height: 1.35; margin: 18px 0 8px; }
+.preview h1 { font-size: 24px; }
+.preview h2 { font-size: 20px; }
+.preview h3 { font-size: 17px; }
+.preview h1:first-child, .preview h2:first-child { margin-top: 4px; }
+.preview p { margin: 0 0 10px; }
+.preview strong { font-weight: 600; }
+.preview del { color: var(--faint); }
+.preview code {
+  font-family: Consolas, "Cascadia Mono", monospace; font-size: .92em;
+  background: #2d2d2d; padding: 1px 4px; border-radius: 4px;
+}
+.preview pre {
+  background: #141414; border: 1px solid var(--line); border-radius: 6px;
+  padding: 10px 12px; overflow-x: auto; margin: 0 0 12px;
+}
+.preview pre code { background: none; padding: 0; }
+.preview blockquote {
+  margin: 0 0 12px; padding: 2px 0 2px 12px; border-left: 2px solid var(--line);
+  color: var(--muted);
+}
+.preview ul, .preview ol { margin: 0 0 10px; padding-left: 22px; }
+.preview li { margin: 2px 0; }
+.preview li.task { list-style: none; margin-left: -20px; }
+.preview hr { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
+.preview table { border-collapse: collapse; margin: 0 0 12px; font-size: 14px; }
+.preview th, .preview td { border: 1px solid var(--line); padding: 4px 10px; }
+.preview th { background: var(--head); font-weight: 600; }
+.preview .wl { color: #9db8ff; text-decoration: none; cursor: pointer; }
+.preview .wl:hover { text-decoration: underline; }
+.preview .wl.missing { color: #e9973f; }
+.preview .tag {
+  background: var(--panel); border-radius: 4px; padding: 1px 5px;
+  color: var(--muted); font-size: .92em; cursor: pointer;
+}
+.preview .tag:hover { color: var(--text); }
+.preview a { color: #9db8ff; }
+
+/* ---------------------------------------------------------------- 状态栏 */
+.statusbar {
+  height: var(--status-h); display: flex; align-items: center; justify-content: space-between;
+  padding: 0 12px; background: var(--card); border-top: 1px solid var(--line-soft);
+  color: var(--faint); font-size: 12px;
+}
+
+/* ---------------------------------------------------------------- 八边缩放 */
+.resize-layer { position: fixed; inset: 0; pointer-events: none; z-index: 60; }
+.resize-layer > div { position: fixed; pointer-events: auto; }
+.resize-layer [data-edge="n"] { top: 0; left: 6px; right: 6px; height: 4px; cursor: ns-resize; }
+.resize-layer [data-edge="s"] { bottom: 0; left: 6px; right: 6px; height: 4px; cursor: ns-resize; }
+.resize-layer [data-edge="w"] { left: 0; top: 6px; bottom: 6px; width: 4px; cursor: ew-resize; }
+.resize-layer [data-edge="e"] { right: 0; top: 6px; bottom: 6px; width: 4px; cursor: ew-resize; }
+.resize-layer [data-edge="nw"] { top: 0; left: 0; width: 8px; height: 8px; cursor: nwse-resize; }
+.resize-layer [data-edge="ne"] { top: 0; right: 0; width: 8px; height: 8px; cursor: nesw-resize; }
+.resize-layer [data-edge="sw"] { bottom: 0; left: 0; width: 8px; height: 8px; cursor: nesw-resize; }
+.resize-layer [data-edge="se"] { bottom: 0; right: 0; width: 8px; height: 8px; cursor: nwse-resize; }
+
+/* ---------------------------------------------------------------- 弹出菜单 */
+.popover {
+  position: fixed; z-index: 100; min-width: 190px; padding: 5px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .5);
+}
+.popover .item {
+  display: flex; align-items: center; gap: 10px; height: 28px; padding: 0 9px;
+  border-radius: 5px; color: var(--text); font-size: 13px; white-space: nowrap;
+}
+.popover .item:hover { background: var(--hover); }
+.popover .item .accel { margin-left: auto; color: var(--faint); font-size: 11px; }
+.popover .item.disabled { color: var(--faint); pointer-events: none; }
+.popover .sep { height: 1px; background: var(--line); margin: 5px 6px; }
+
+/* 滚动条（Obsidian 风格：细、暗） */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: #4a4a4a; background-clip: content-box; }
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* ---------------------------------------------------------------- 弹窗 */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, .55);
+  display: grid; place-items: center; z-index: 200;
+}
+.modal {
+  width: min(620px, 86vw); max-height: 80vh; display: flex; flex-direction: column;
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .6); overflow: hidden;
+}
+.modal header {
+  padding: 12px 16px; border-bottom: 1px solid var(--line); font-weight: 600; font-size: 14px;
+}
+.modal-body { padding: 14px 16px; overflow-y: auto; color: var(--text); font-size: 13px; line-height: 1.7; }
+.modal-body .help h3 { font-size: 13px; margin: 14px 0 6px; color: var(--text); }
+.modal-body .help h3:first-child { margin-top: 0; }
+.modal-body .help p, .modal-body .help ul { margin: 0 0 8px; color: var(--muted); }
+.modal-body .help ul { padding-left: 18px; }
+.modal-body .help li { margin: 3px 0; }
+.modal-input {
+  width: 100%; margin-top: 4px; padding: 7px 10px; background: var(--bg);
+  border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-size: 13px;
+  user-select: text;
+}
+.modal-input:focus { border-color: var(--accent); }
+.modal footer {
+  display: flex; justify-content: flex-end; gap: 8px; padding: 10px 16px;
+  border-top: 1px solid var(--line);
+}
+.modal-btn {
+  min-width: 68px; height: 28px; border-radius: 6px; background: var(--panel);
+  color: var(--muted); font-size: 13px;
+}
+.modal-btn:hover { background: var(--hover); color: var(--text); }
+.modal-btn.primary { background: var(--accent); color: #fff; }
+.modal-btn.primary:hover { background: #8b5cf6; }
+
+
+/* ── 富文本块（Notion 式）────────────────────────────────────────────
+   每段是一个块，块里显示的是排版后的样子；单击就能在里面落光标，
+   边打边生效。代码 / 公式 / 表格 / 分割线是"源码块"，点开才用输入框改。 */
+.blk {
+  position: relative;
+  border-radius: 6px;
+  padding: 2px 0;
+}
+.blk[data-kind="inline"] {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+}
+.blk-txt {
+  flex: 1 1 auto;
+  min-width: 0;
+  outline: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+  caret-color: var(--caret);
+  border-radius: 4px;
+}
+/* 光标落点：正在写的那一块有淡淡底色，光标闪的时候也看得出位置 */
+.blk:focus-within .blk-txt {
+  background: rgba(255, 255, 255, .045);
+  box-shadow: -2px 0 0 var(--caret);
+}
+.blk-empty.is-only .blk-txt:empty::before {
+  content: "输入 / 选择块类型，或直接开始写…";
+  color: var(--faint);
+  pointer-events: none;
+}
+/* 标题 */
+.blk-h1 .blk-txt { font-size: 1.75em; font-weight: 700; line-height: 1.25; margin: 26px 0 4px; }
+.blk-h2 .blk-txt { font-size: 1.45em; font-weight: 600; line-height: 1.3; margin: 22px 0 3px; }
+.blk-h3 .blk-txt { font-size: 1.15em; font-weight: 600; line-height: 1.4; margin: 16px 0 2px; }
+/* 列表 / 待办 / 引用：标记挂到左边的留白里，正文和段落对齐在一条线上 */
+.blk-dot, .blk-mark-num, .blk-check {
+  flex: 0 0 auto;
+  user-select: none;
+}
+.blk-dot, .blk-mark-num {
+  color: var(--muted);
+  line-height: 1.55;
+}
+.blk-mark-num { min-width: 16px; text-align: right; margin-left: -20px; margin-right: 4px; font-variant-numeric: tabular-nums; }
+.blk-dot { width: 14px; text-align: center; margin-left: -16px; margin-right: 2px; }
+.blk-bullet, .blk-num, .blk-task { padding-left: 0; }
+.blk-check {
+  width: 16px; height: 16px; margin: -1px 6px 0 -22px;
+  display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 3px;
+  background: transparent; color: #0f0f0f; font-size: 10px; line-height: 1;
+  cursor: pointer;
+}
+.blk-check.done { background: var(--accent); border-color: var(--accent); }
+.blk-task.done .blk-txt { color: var(--faint); text-decoration: line-through; }
+.blk-quote {
+  border-left: 3px solid var(--line);
+  padding-left: 14px;
+  margin-left: -2px;
+}
+.blk-quote .blk-txt { color: var(--muted); }
+/* 源码块：整段是渲染结果，点开才换成输入框 */
+.blk[data-kind="source"] { cursor: text; }
+.blk[data-kind="source"]:hover { background: var(--panel); }
+.blk.is-editing {
+  background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 6px 8px;
+  margin: 2px -8px;
+}
+.blk-editor {
+  display: block; width: 100%; margin: 0; padding: 0; border: 0; outline: 0;
+  resize: none; overflow: hidden; background: transparent; color: var(--text);
+  font: inherit; line-height: inherit; letter-spacing: inherit;
+  user-select: text; white-space: pre-wrap; word-break: break-word;
+}
+
+/* （文末的「＋ 新段落」已经去掉：加块只走块左侧的 ＋ 手柄 / 回车） */
+
+/* 块左侧不再有 ＋ / ⋮⋮ 手柄（用户觉得没用，去掉了） */
+
+/* 块类型小菜单（打 / 弹出来那个） */
+.blk-menu {
+  position: fixed; z-index: 200; min-width: 132px; padding: 4px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 7px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .55);
+}
+.blk-menu button {
+  display: block; width: 100%; text-align: left; padding: 6px 9px;
+  border-radius: 5px; background: transparent; color: var(--text); font-size: 13px;
+}
+.blk-menu button:hover { background: var(--hover); }
+.blk-menu button.danger { color: #fb464c; }
+.blk-menu.slash { min-width: 150px; }
+
+/* 文本光标统一用亮色：深色背景上默认的深紫几乎看不见 */
+input, textarea, [contenteditable="true"], .blk-editor, .note-title {
+  caret-color: var(--caret);
+}
+
+/* 画布/笔记区拿焦点时不要系统默认的焦点框（Windows 上是浅绿一圈，很扎眼） */
+.canvas:focus, .canvas:focus-visible,
+.preview:focus, .preview:focus-visible,
+#preview:focus-visible, #canvas:focus-visible {
+  outline: none !important;
+}
+/* 焦点框只在真正需要的地方出现：容器（画布 / 笔记区 / 窗口）一律不画 */
+html, body, #app, #canvas, #preview, .canvas, .preview, .pane {
+  outline: none !important;
+}
+/* 底部状态栏：只留一个靠右的字数 */
+.word-count { color: var(--faint); font-size: 11.5px; padding: 0 2px; user-select: none; }
+
+/* 二级菜单（右键图列表里的某一项）：盖在主菜单右边，主菜单不消失 */
+.popover.submenu { z-index: 120; min-width: 150px; }
+
+/* 原地重命名：盖在图列表那一行上的输入框 */
+.inline-edit {
+  position: fixed; z-index: 130; margin: 0; padding: 0 8px;
+  background: var(--hover); border: 1px solid var(--accent); border-radius: 5px;
+  color: var(--text); font-size: 13px; outline: none;
+}
+
+/* 卡片正文里的 Markdown 元素：浏览器默认会给 blockquote 40px 左右边距、
+   给 ul/ol 40px 左内边距 —— 卡片本来就窄，这些默认值会把正文挤得只剩中间一条。
+   统一收回到"贴着卡片内边距"，让正文用满宽度、和标题左对齐。 */
+.card-body blockquote {
+  margin: 0 0 .5em; padding: 0 0 0 9px;
+  border-left: 2px solid var(--line); color: var(--muted);
+}
+.card-body ul, .card-body ol { margin: .15em 0 .5em; padding-left: 1.1em; }
+.card-body li { margin: .1em 0; }
+.card-body p { margin: 0 0 .45em; }
+.card-body pre { margin: .3em 0; }
+.card-body h1, .card-body h2, .card-body h3 { margin: .35em 0 .2em; line-height: 1.25; }
+.card-body blockquote > :last-child { margin-bottom: 0; }
+
+/* 卡片里的标题别再按正文的 1.45em 放大，否则会顶出卡片外 */
+.card-body h1, .card-body h2, .card-body h3 {
+  font-size: 1.02em; font-weight: 600; line-height: 1.35;
+  margin: .3em 0 .15em; word-break: break-word;
+}

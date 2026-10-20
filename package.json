@@ -1,0 +1,19 @@
+{
+  "name": "for-you-notes",
+  "version": "1.0.0",
+  "description": "本地优先的双栏知识图谱笔记：左栏画布，右栏富文本笔记",
+  "main": "main.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test \"test/*.test.mjs\"",
+    "uitest": "electron scripts/uitest.js",
+    "capture": "electron scripts/capture.js"
+  },
+  "author": "yaLen",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^44.9.0",
+    "katex": "^0.19.0"
+  }
+}

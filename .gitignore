@@ -1,0 +1,30 @@
+# 依赖与构建产物
+node_modules/
+dist/
+out/
+
+# 本机数据（笔记、图片、备份都在用户的 AppData 里，这里只是历史遗留）
+data/
+
+# 早期 Python/Tk 版本
+legacy/
+
+# 日志与临时文件
+launch.log
+*.log
+*.tmp
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+# 只把 README 用到的两张截图放进仓库
+docs/*
+!docs/screenshot-overview.png
+!docs/screenshot-note.png
+# 一次性截图场景脚本，不放进仓库
+scripts/scenes/
+# 早期调试用的零散探针
+scripts/cdp.js
+scripts/probe-boot.js
+scripts/make-state.js
