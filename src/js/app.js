@@ -23,7 +23,7 @@ const dom = {
   linkArrowSolid: $('linkArrowSolid'), linkArrowHollow: $('linkArrowHollow'), linkArrowNone: $('linkArrowNone'),
   linkSizeDown: $('linkSizeDown'), linkSizeVal: $('linkSizeVal'), linkSizeUp: $('linkSizeUp'),
   linkRepin: $('linkRepin'), linkRemove: $('linkRemove'),
-  btnTidy: $('btnTidy'), btnUndo: $('btnUndo'), btnRedo: $('btnRedo'), statsLabel: $('statsLabel'),
+  btnTidy: $('btnTidy'), btnUndo: $('btnUndo'), btnRedo: $('btnRedo'),
   btnZoomOut: $('btnZoomOut'), btnZoomReset: $('btnZoomReset'), btnZoomIn: $('btnZoomIn'), btnFit: $('btnFit'),
   noteTitle: $('noteTitle'), noteAccent: $('noteAccent'),
   editor: $('editor'), preview: $('preview'), emptyHint: $('emptyHint'),
@@ -378,7 +378,6 @@ function updateStatus() {
   if (!ws) return;
   const count = ws.notesOf().length;
   const links = ws.linkCount();
-  dom.statsLabel.textContent = `${count} 篇 · ${links} 链接`;
   // 左下不再显示图名 / 孤岛提示；这里只负责把过期的临时提示清掉
   if (!statusNoteUntil || Date.now() > statusNoteUntil) dom.statusLeft.textContent = '';
   const words = Number(wordCount || 0).toLocaleString('en-US');
