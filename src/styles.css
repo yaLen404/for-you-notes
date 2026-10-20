@@ -626,7 +626,7 @@ html, body, #app, #canvas, #preview, .canvas, .preview, .pane {
 .card-mark {
   margin-left: auto; flex: 0 0 auto;
   width: 9px; height: 9px; border-radius: 50%;
-  background: var(--c, var(--accent-soft));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c, var(--accent-soft)) 45%, #000);
+  background: var(--c, var(--muted));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c, var(--muted)) 45%, #000);
 }
 .node-toolbar .tool-btn svg { width: 13px; height: 13px; }
