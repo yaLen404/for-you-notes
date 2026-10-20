@@ -28,3 +28,5 @@ scripts/scenes/
 scripts/cdp.js
 scripts/probe-boot.js
 scripts/make-state.js
+# 发布说明只在创建 release 时用，不提交
+.release-notes.md
