@@ -54,7 +54,7 @@ export class Workspace {
     for (const title of bodyTitles(note.content)) {
       const target = this.findTitle(title, note.graph);
       if (target && !out.has(target.id)) {
-        out.set(target.id, { id: target.id, shape: 'line', arrow: 'solid' });
+        out.set(target.id, { id: target.id, shape: 'line', arrow: 'solid', width: 2, arrowSize: 6 });
       }
     }
     return out;
@@ -197,6 +197,8 @@ export class Workspace {
     if (link) {
       if (style.shape) link.shape = style.shape;
       if (style.arrow) link.arrow = style.arrow;
+      if (style.width) link.width = style.width;
+      if (style.arrowSize) link.arrowSize = style.arrowSize;
     } else {
       src.links = src.links || [];
       src.links.push({
@@ -227,6 +229,8 @@ export class Workspace {
     if (!link) return;
     if (style.shape) link.shape = style.shape;
     if (style.arrow) link.arrow = style.arrow;
+    if (style.width) link.width = style.width;
+    if (style.arrowSize) link.arrowSize = style.arrowSize;
     src.updated = Date.now();
     this.markDirty(srcId);
   }

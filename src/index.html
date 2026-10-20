@@ -72,6 +72,27 @@
           <button class="tool-btn wide" id="toolDelete">删除</button>
         </div>
 
+        <div class="node-toolbar link-toolbar" id="linkToolbar" hidden>
+          <button class="tool-btn" id="linkCurve" title="曲线">曲线</button>
+          <button class="tool-btn" id="linkLine" title="直线">直线</button>
+          <div class="sep"></div>
+          <button class="tool-btn" id="linkArrowSolid" title="实心箭头">实心</button>
+          <button class="tool-btn" id="linkArrowHollow" title="空心箭头">空心</button>
+          <button class="tool-btn" id="linkArrowNone" title="不要箭头">无箭头</button>
+          <div class="sep"></div>
+          <span class="tool-label">线宽</span>
+          <button class="tool-btn" id="linkWidthDown" title="线条更细">−</button>
+          <span class="tool-val" id="linkWidthVal">2</span>
+          <button class="tool-btn" id="linkWidthUp" title="线条更粗">＋</button>
+          <span class="tool-label">箭头</span>
+          <button class="tool-btn" id="linkArrowDown" title="箭头更小">−</button>
+          <span class="tool-val" id="linkArrowVal">6</span>
+          <button class="tool-btn" id="linkArrowUp" title="箭头更大">＋</button>
+          <div class="sep"></div>
+          <button class="tool-btn wide" id="linkRepin" title="接口重新对准当前位置">对准</button>
+          <button class="tool-btn wide" id="linkRemove" title="删除这条连接">断开</button>
+        </div>
+
         <div class="pill left-pill">
           <button class="pill-btn" id="btnTidy" title="整理布局（可撤销）">⌗</button>
           <button class="pill-btn" id="btnUndo" title="撤销 Ctrl+Z">↺</button>

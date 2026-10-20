@@ -56,6 +56,7 @@
     catch (e) { out.push([name, false, e && e.message ? e.message : String(e)]); }
   };
   const fail = (msg) => { throw new Error(msg); };
+  const placeToolbarForTest = () => f.setFocusOnly(false);
   const closePopoverForTest = () => document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
   const pointer = (el, type, x, y, extra = {}) => el.dispatchEvent(new PointerEvent(type, Object.assign({
     bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: 1, button: 0, isPrimary: true,
@@ -1398,6 +1399,53 @@
     await wait();
     if (!(rec.w <= 140 && rec.h <= 60)) fail(`卡片的尺寸下限还是太大：${Math.round(rec.w)}x${Math.round(rec.h)}`);
     return grown + `，再缩到 ${Math.round(rec.w)}x${Math.round(rec.h)}`;
+  });
+
+  await run('点连线弹出上方工具栏，能调线宽和箭头大小', async () => {
+    const notes = ws.notesOf();
+    const a = notes[0];
+    const b = notes.find((n) => n.id !== a.id);
+    ws.addLink(a.id, b.id);
+    ws.setLinkStyle(a.id, b.id, { shape: 'line', arrow: 'solid', width: 2, arrowSize: 6 });
+    c.renderEdges();
+    await wait(280);
+    const hit = document.querySelector('path.hit[data-hitsrc="' + a.id + '"][data-hitdst="' + b.id + '"]');
+    if (!hit) fail('找不到这条连线');
+    const r = hit.getBoundingClientRect();
+    pointer(hit, 'pointerdown', Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2));
+    await wait(300);
+    const tb = document.getElementById('linkToolbar');
+    if (!tb || tb.hidden) fail('点连线没有弹出工具栏');
+    const rect = tb.getBoundingClientRect();
+    const path = document.querySelector('path.edge[data-src="' + a.id + '"][data-dst="' + b.id + '"]');
+    if (!path) fail('找不到这条线的 path');
+    const clickY = Math.round(r.top + r.height / 2);
+    // 工具栏要贴着这条线（别跑到屏幕另一头去）
+    if (Math.abs(rect.top + rect.height / 2 - clickY) > 160) {
+      fail('工具栏离连线太远：' + Math.round(rect.top) + ' vs ' + clickY);
+    }
+    const link = () => ws.note(a.id).links.find((l) => l.id === b.id);
+    // 每次重画都会换掉 path 节点，取最新的那个
+    const edge = () => document.querySelector('path.edge[data-src="' + a.id + '"][data-dst="' + b.id + '"]');
+    if (link().width !== 2) fail('初始线宽不是 2');
+    document.getElementById('linkWidthUp').click();
+    document.getElementById('linkWidthUp').click();
+    await wait(280);
+    if (link().width !== 4) fail('线宽没加上去：' + link().width);
+    const p1 = edge();
+    if (!p1) fail('连线节点不见了');
+    if (p1.getAttribute('stroke-width') !== '4') fail('线宽没画到 path 上：' + p1.getAttribute('stroke-width'));
+    document.getElementById('linkArrowUp').click();
+    await wait(280);
+    if (link().arrowSize !== 8) fail('箭头大小没变：' + link().arrowSize);
+    const marker = (edge() || { getAttribute: () => '' }).getAttribute('marker-end') || '';
+    if (!marker.includes('-8')) fail('箭头 marker 没换尺寸：' + marker);
+    if (document.getElementById('linkWidthVal').textContent !== '4') fail('线宽数字没同步');
+    // 收起
+    c.selectedLink = null;
+    placeToolbarForTest();
+    await wait(150);
+    return '工具栏在线条上方，线宽 2→4、箭头 6→8';
   });
 
   await run('连线样式可改', async () => {

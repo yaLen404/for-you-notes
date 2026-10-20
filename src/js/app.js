@@ -19,6 +19,11 @@ const dom = {
   edgeLayer: $('edgeLayer'), edgeHitLayer: $('edgeHitLayer'), canvasEmpty: $('canvasEmpty'),
   nodeToolbar: $('nodeToolbar'), swatches: $('swatches'),
   toolClear: $('toolClear'), toolEdit: $('toolEdit'), toolNew: $('toolNew'), toolDelete: $('toolDelete'),
+  linkToolbar: $('linkToolbar'), linkCurve: $('linkCurve'), linkLine: $('linkLine'),
+  linkArrowSolid: $('linkArrowSolid'), linkArrowHollow: $('linkArrowHollow'), linkArrowNone: $('linkArrowNone'),
+  linkWidthDown: $('linkWidthDown'), linkWidthVal: $('linkWidthVal'), linkWidthUp: $('linkWidthUp'),
+  linkArrowDown: $('linkArrowDown'), linkArrowVal: $('linkArrowVal'), linkArrowUp: $('linkArrowUp'),
+  linkRepin: $('linkRepin'), linkRemove: $('linkRemove'),
   btnTidy: $('btnTidy'), btnUndo: $('btnUndo'), btnRedo: $('btnRedo'), statsLabel: $('statsLabel'),
   btnZoomOut: $('btnZoomOut'), btnZoomReset: $('btnZoomReset'), btnZoomIn: $('btnZoomIn'), btnFit: $('btnFit'),
   noteTitle: $('noteTitle'), noteAccent: $('noteAccent'),
@@ -60,6 +65,7 @@ async function boot() {
   bindChrome();
   bindShortcuts();
   bindSplitter();
+  bindLinkToolbar();
   bindResize();
 
   canvas.attach();
@@ -124,7 +130,7 @@ const canvasHooks = {
     pane.renderMeta();
     updateStatus();
   },
-  onLinkSelect(pair, x, y) { openLinkMenu(pair, x, y); },
+  onLinkSelect(pair, x, y) { showLinkToolbar(pair, x, y); },
   onContext(kind, payload, x, y) { openContextMenu(kind, payload, x, y); },
 };
 
@@ -437,6 +443,9 @@ function syncSwatches() {
 }
 
 function placeToolbar() {
+  // 连线工具栏跟着"选中的那条线"走，没选就让位
+  if (!canvas || !canvas.selectedLink) hideLinkToolbar();
+  else if (linkToolbarPair) syncLinkToolbar();
   if (!canvas || !canvas.selected) { dom.nodeToolbar.hidden = true; return; }
   const rect = canvas.screenRectOf(canvas.selected);
   if (!rect) { dom.nodeToolbar.hidden = true; return; }
@@ -624,6 +633,91 @@ function openContextMenu(kind, payload, x, y) {
     { label: '整理布局', action: () => tidy() },
     { label: '适应窗口', action: () => canvas.fit() },
   ], x, y);
+}
+
+
+// ---------------------------------------------------------------- 连线工具栏
+let linkToolbarPair = null;
+let linkToolbarPos = { x: 0, y: 0 };
+
+function showLinkToolbar(pair, x, y) {
+  linkToolbarPair = pair;
+  linkToolbarPos = { x: x || 0, y: y || 0 };
+  if (!dom.linkToolbar) return;
+  dom.linkToolbar.hidden = false;
+  syncLinkToolbar();
+}
+
+function hideLinkToolbar() {
+  linkToolbarPair = null;
+  if (dom.linkToolbar) dom.linkToolbar.hidden = true;
+}
+
+function currentLink() {
+  if (!linkToolbarPair) return null;
+  const note = ws.note(linkToolbarPair.src);
+  return (note && (note.links || []).find((l) => l.id === linkToolbarPair.dst)) || null;
+}
+
+function syncLinkToolbar() {
+  if (!dom.linkToolbar || dom.linkToolbar.hidden) return;
+  const link = currentLink();
+  const shape = link ? link.shape : 'line';
+  const arrow = link ? link.arrow : 'solid';
+  dom.linkCurve.classList.toggle('active', shape === 'curve');
+  dom.linkLine.classList.toggle('active', shape !== 'curve');
+  dom.linkArrowSolid.classList.toggle('active', arrow !== 'hollow' && arrow !== 'none');
+  dom.linkArrowHollow.classList.toggle('active', arrow === 'hollow');
+  dom.linkArrowNone.classList.toggle('active', arrow === 'none');
+  dom.linkWidthVal.textContent = String(link ? (Number(link.width) || 2) : 2);
+  dom.linkArrowVal.textContent = String(link ? (Number(link.arrowSize) || 6) : 6);
+  placeLinkToolbar();
+}
+
+function placeLinkToolbar() {
+  const el = dom.linkToolbar;
+  if (!el || el.hidden) return;
+  const w = el.offsetWidth;
+  const h = el.offsetHeight;
+  el.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, linkToolbarPos.x - w / 2)) + 'px';
+  el.style.top = Math.max(8, linkToolbarPos.y - h - 14) + 'px';
+}
+
+/** 改这条线的样式（粗细 / 箭头大小也走这里） */
+function bumpLinkStyle(patch) {
+  if (!linkToolbarPair) return;
+  pushUndo();
+  ensureLink(linkToolbarPair);
+  ws.setLinkStyle(linkToolbarPair.src, linkToolbarPair.dst, patch);
+  canvas.renderEdges();
+  syncLinkToolbar();
+  scheduleSave();
+}
+
+function bindLinkToolbar() {
+  if (!dom.linkToolbar) return;
+  dom.linkCurve.addEventListener('click', () => bumpLinkStyle({ shape: 'curve' }));
+  dom.linkLine.addEventListener('click', () => bumpLinkStyle({ shape: 'line' }));
+  dom.linkArrowSolid.addEventListener('click', () => bumpLinkStyle({ arrow: 'solid' }));
+  dom.linkArrowHollow.addEventListener('click', () => bumpLinkStyle({ arrow: 'hollow' }));
+  dom.linkArrowNone.addEventListener('click', () => bumpLinkStyle({ arrow: 'none' }));
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const step = (field, delta, lo, hi) => {
+    const link = currentLink();
+    const now = link ? (Number(link[field]) || (field === 'width' ? 2 : 6)) : (field === 'width' ? 2 : 6);
+    bumpLinkStyle({ [field]: clamp(now + delta, lo, hi) });
+  };
+  dom.linkWidthDown.addEventListener('click', () => step('width', -1, 1, 8));
+  dom.linkWidthUp.addEventListener('click', () => step('width', 1, 1, 8));
+  dom.linkArrowDown.addEventListener('click', () => step('arrowSize', -2, 4, 18));
+  dom.linkArrowUp.addEventListener('click', () => step('arrowSize', 2, 4, 18));
+  dom.linkRepin.addEventListener('click', () => { if (linkToolbarPair) repinLink(linkToolbarPair); });
+  dom.linkRemove.addEventListener('click', () => {
+    if (!linkToolbarPair) return;
+    const pair = linkToolbarPair;
+    hideLinkToolbar();
+    removeLink(pair);
+  });
 }
 
 function openLinkMenu(pair, x, y) {

@@ -374,18 +374,43 @@ export class Canvas {
       const sel = this.selectedLink && this.selectedLink.src === src && this.selectedLink.dst === dst;
       const hov = this.hoverLink && this.hoverLink.src === src && this.hoverLink.dst === dst;
       const cls = ['edge', sel ? 'selected' : '', hov ? 'hover' : ''].filter(Boolean).join(' ');
-      const marker = link.arrow === 'none' ? '' : ` marker-end="url(#${sel ? 'arrow-sel' : 'arrow'})"`;
+      const width = Math.max(1, Math.min(8, Number(link.width) || 2));
+      const arrowSize = Math.max(4, Math.min(18, Number(link.arrowSize) || 6));
+      const markerId = link.arrow === 'none' ? ''
+        : ` marker-end="url(#${this.ensureMarker(sel ? 'sel' : 'normal', arrowSize)})"`;
+      const strokeAttr = width !== 2 ? ` stroke-width="${width}"` : '';
       // 选中这条线时，把两端真正落在哪个"接口"画出来（换边时一眼能看见）
       if (sel) {
         for (const p of [path.start, path.end]) {
           ports.push(`<circle class="port" cx="${p[0]}" cy="${p[1]}" r="${9 / this.zoom}" />`);
         }
       }
-      paths.push(`<path class="${cls}" d="${path.d}"${marker} data-src="${src}" data-dst="${dst}"></path>`);
+      paths.push(`<path class="${cls}" d="${path.d}"${markerId}${strokeAttr} data-src="${src}" data-dst="${dst}"></path>`);
       hits.push(`<path class="hit" d="${path.d}" data-hitsrc="${src}" data-hitdst="${dst}"></path>`);
     }
     this.edgeLayer.innerHTML = paths.join('') + ports.join('');
     this.edgeHit.innerHTML = hits.join('');
+  }
+
+  /** 箭头大小可以逐条调，所以按 (状态 + 尺寸) 动态建 marker */
+  ensureMarker(kind, size) {
+    const id = `arrow-${kind}-${size}`;
+    if (this.root.querySelector(`#${id}`)) return id;
+    const sel = kind === 'sel';
+    const color = sel ? '#a882ff' : '#5a5a5a';
+    const m = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+    m.setAttribute('id', id);
+    m.setAttribute('viewBox', '0 0 10 10');
+    m.setAttribute('refX', String(size * 0.9));
+    m.setAttribute('refY', String(size * 0.5));
+    m.setAttribute('markerWidth', String(size));
+    m.setAttribute('markerHeight', String(size));
+    m.setAttribute('markerUnits', 'userSpaceOnUse');
+    m.setAttribute('orient', 'auto-start-reverse');
+    m.innerHTML = `<path d="M0,0.6 L9,5 L0,9.4 z" fill="${color}"></path>`;
+    const defs = this.root.querySelector('defs') || this.root.querySelector('svg defs');
+    if (defs) defs.appendChild(m);
+    return id;
   }
 
   /** 拖拽时只更新受影响的几何，不做整树重建 */
