@@ -456,6 +456,30 @@ function toggleNoteTodo() {
   scheduleSave();
 }
 
+/** 临时让画布占满整条（把笔记栏收起来），再点一次还原 */
+let canvasWide = false;
+let wideSplit = null;
+function toggleCanvasWide() {
+  canvasWide = !canvasWide;
+  if (canvasWide) {
+    wideSplit = ws.state.split;
+    dom.body.classList.add('canvas-wide');
+    dom.btnFit.classList.add('active');
+  } else {
+    dom.body.classList.remove('canvas-wide');
+    dom.btnFit.classList.remove('active');
+    if (wideSplit != null) ws.state.split = wideSplit;
+    applySplit();
+  }
+  // 尺寸变了，重算视图和浮层位置
+  requestAnimationFrame(() => {
+    canvas.applyView();
+    placeToolbar();
+    syncLinkToolbar();
+    updateStatus();
+  });
+}
+
 function placeToolbar() {
   // 连线工具栏跟着"选中的那条线"走，没选就让位
   if (!canvas || !canvas.selectedLink) hideLinkToolbar();
@@ -1166,7 +1190,7 @@ function bindChrome() {
   dom.btnZoomOut.addEventListener('click', () => canvas.zoomBy(1 / 1.15));
   dom.btnZoomIn.addEventListener('click', () => canvas.zoomBy(1.15));
   dom.btnZoomReset.addEventListener('click', () => canvas.setZoom(1));
-  dom.btnFit.addEventListener('click', () => canvas.fit());
+  dom.btnFit.addEventListener('click', () => toggleCanvasWide());
 
   // 标题栏拖动 / 双击最大化
   let drag = null;

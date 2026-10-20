@@ -738,6 +738,25 @@
     return items.join(' / ');
   });
 
+  await run('画布按钮：临时让画布占满，再点还原', async () => {
+    const body = document.getElementById('body');
+    const right = document.getElementById('rightPane');
+    const canvas = document.getElementById('canvas');
+    const btn = document.getElementById('btnFit');
+    const before = Math.round(canvas.getBoundingClientRect().width);
+    realClick(btn);
+    await wait(420);
+    const wide = Math.round(canvas.getBoundingClientRect().width);
+    if (getComputedStyle(right).display !== 'none') fail('笔记栏没收起来');
+    if (wide <= before + 100) fail('画布没有占满：' + before + ' → ' + wide);
+    if (Math.abs(wide - body.clientWidth) > 4) fail('画布没有占满整条：' + wide + ' vs ' + body.clientWidth);
+    realClick(btn);
+    await wait(420);
+    if (getComputedStyle(right).display === 'none') fail('再点没有还原笔记栏');
+    if (Math.abs(Math.round(canvas.getBoundingClientRect().width) - before) > 4) fail('画布宽度没还原');
+    return '画布 ' + before + ' → ' + wide + ' → ' + Math.round(canvas.getBoundingClientRect().width);
+  });
+
   await run('画布缩放条能用（走真实指针路径）', async () => {
     const btn = document.getElementById('btnZoomIn');
     if (!btn) fail('没有缩放条');

@@ -630,3 +630,10 @@ html, body, #app, #canvas, #preview, .canvas, .preview, .pane {
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--c, var(--muted)) 45%, #000);
 }
 .node-toolbar .tool-btn svg { width: 13px; height: 13px; }
+
+
+/* 临时放大画布：笔记栏和分栏条先让位 */
+.body.canvas-wide .splitter,
+.body.canvas-wide .pane-right { display: none; }
+/* 左栏是按像素定宽的，宽画布时要让它自己撑满 */
+.body.canvas-wide .pane-left { flex: 1 1 auto !important; width: auto !important; }
