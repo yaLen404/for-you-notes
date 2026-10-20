@@ -274,7 +274,7 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
 .note-body { flex: 1; min-height: 0; position: relative; padding: 0 16px 0 10px; }
 .preview {
   /* 左边只留够列表标记悬挂的宽度（手柄删掉后不再需要 64px 的大留白） */
-  position: absolute; inset: 0; padding: 6px 20px 24px 28px;
+  position: absolute; inset: 0; padding: 6px 20px 24px 18px;
   overflow-y: auto; overflow-x: hidden;
 }
 .empty-hint {
@@ -503,11 +503,11 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
   color: var(--muted);
   line-height: 1.55;
 }
-.blk-mark-num { min-width: 16px; text-align: right; margin-left: -20px; margin-right: 4px; font-variant-numeric: tabular-nums; }
-.blk-dot { width: 14px; text-align: center; margin-left: -16px; margin-right: 2px; }
+.blk-mark-num { min-width: 18px; text-align: right; margin-right: 5px; font-variant-numeric: tabular-nums; }
+.blk-dot { width: 14px; text-align: center; margin-right: 5px; }
 .blk-bullet, .blk-num, .blk-task { padding-left: 0; }
 .blk-check {
-  width: 16px; height: 16px; margin: -1px 6px 0 -22px;
+  width: 16px; height: 16px; margin: -1px 7px 0 0;
   display: grid; place-items: center;
   border: 1px solid var(--line); border-radius: 3px;
   background: transparent; color: #0f0f0f; font-size: 10px; line-height: 1;
