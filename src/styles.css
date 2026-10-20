@@ -228,7 +228,7 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
 
 /* 节点工具条 */
 .node-toolbar {
-  position: absolute; display: flex; align-items: center; gap: 3px;
+  position: absolute; display: flex; align-items: center; gap: 2px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 7px;
   padding: 4px 6px; box-shadow: 0 3px 14px rgba(0, 0, 0, .4); z-index: 20;
 }
@@ -242,6 +242,12 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
 }
 .tool-btn:hover { background: var(--hover); color: var(--text); }
 .node-toolbar .sep { width: 1px; height: 14px; background: var(--line); margin: 0 4px; }
+.tool-btn.ico { min-width: 22px; padding: 0 3px; display: inline-flex; align-items: center; justify-content: center; }
+.tool-btn svg, .tool-glyph svg {
+  width: 15px; height: 13px; fill: none; stroke: currentColor;
+  stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round;
+}
+.tool-glyph { display: inline-flex; align-items: center; color: var(--faint); padding: 0 2px; }
 .tool-btn.active { background: var(--hover); color: var(--text); }
 .tool-label { color: var(--faint); font-size: 11px; padding: 0 2px; }
 .tool-val { color: var(--text); font-size: 12px; min-width: 14px; text-align: center; font-variant-numeric: tabular-nums; }
