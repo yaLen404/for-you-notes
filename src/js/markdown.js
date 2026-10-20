@@ -545,3 +545,12 @@ export function blockToHtml(block, exists = () => true) {
       return renderInlineLines(block.inline || '', exists);
   }
 }
+
+/** 画板卡片上不画图片：只把"图片嵌入"整段去掉，文字原样保留。
+ *  ![[笔记标题]] 这种不是图片，保持不动。 */
+const IMAGE_NAME = /\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i;
+export function stripImageEmbeds(md) {
+  return String(md == null ? '' : md)
+    .replace(/!\[\[([^\[\]\n]{1,200})\]\]/g, (all, name) => (IMAGE_NAME.test(String(name).trim()) ? '' : all))
+    .replace(/!\[[^\]\n]*\]\([^)\n]*\)/g, '');
+}

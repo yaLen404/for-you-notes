@@ -7,7 +7,7 @@
  */
 
 import * as G from './geometry.js';
-import { render as renderMarkdown } from './markdown.js';
+import { render as renderMarkdown, stripImageEmbeds } from './markdown.js';
 
 const HEADER_H = 32;
 const PAD = 12;
@@ -26,6 +26,7 @@ const ICON = '<svg class="card-icon" viewBox="0 0 11 13" fill="none" stroke="cur
   'stroke-width="1"><path d="M1.5 1.5h5l3 3v7h-8z"/><path d="M6.5 1.5v3h3"/></svg>';
 
 const SIDE_ALIAS = { n: 'top', s: 'bottom', w: 'left', e: 'right' };
+
 
 export class Canvas {
   constructor(dom, ws, hooks = {}) {
@@ -317,7 +318,7 @@ export class Canvas {
       `left:${rec.x}px`, `top:${rec.y}px`, `width:${rec.w}px`, `height:${rec.h}px`,
       note.color ? `--c:${note.color}` : '',
     ].filter(Boolean).join(';');
-    const body = renderMarkdown(note.content || '', exists);
+    const body = renderMarkdown(stripImageEmbeds(note.content), exists);
     return `<div class="${cls.join(' ')}" data-id="${note.id}" style="${style}">
       <div class="card-inner">
         <div class="card-head">${ICON}<span class="card-title">${escapeHtml(note.title || '未命名')}</span></div>

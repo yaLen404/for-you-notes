@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { stripImageEmbeds } from '../src/js/markdown.js';
 import assert from 'node:assert';
 
 import { render, inline, plainLines, escapeHtml } from '../src/js/markdown.js';
@@ -126,4 +127,12 @@ test('摘要：图片显示成 [图片 文件名]', () => {
 test('纯文本行：去掉标记', () => {
   const lines = plainLines('## 标题\n**粗**与[[链接]] #标签\n\n- 条目');
   assert.deepEqual(lines, ['标题', '粗与链接', '条目']);
+});
+
+test('卡片用的去图：图片嵌入被去掉，笔记双链保留', () => {
+  assert.equal(stripImageEmbeds('文字\n\n![[img-1.png]]\n\n结尾').trim(), '文字\n\n\n\n结尾'.trim());
+  assert.equal(stripImageEmbeds('![[笔记标题]] 保留'), '![[笔记标题]] 保留');
+  assert.equal(stripImageEmbeds('![alt](http://x/y.png)').trim(), '');
+  assert.equal(stripImageEmbeds('![[a.JPG]]'), '');
+  assert.equal(stripImageEmbeds(''), '');
 });
