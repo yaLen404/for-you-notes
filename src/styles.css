@@ -619,9 +619,11 @@ html, body, #app, #canvas, #preview, .canvas, .preview, .pane {
   background: var(--hover); border-radius: 4px; line-height: 18px; text-align: center;
 }
 
-/* 卡片右上角的"待办"标记 */
+/* 卡片右上角的"待办"标记：一个纯色圆点，跟着这张卡片的颜色 */
 .card-mark {
-  margin-left: auto; color: var(--accent-soft);
-  font-size: 12px; line-height: 1; flex: 0 0 auto;
+  margin-left: auto; flex: 0 0 auto;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--c, var(--accent-soft));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c, var(--accent-soft)) 45%, #000);
 }
 .node-toolbar .tool-btn svg { width: 13px; height: 13px; }
