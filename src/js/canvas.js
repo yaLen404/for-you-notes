@@ -375,11 +375,11 @@ export class Canvas {
       const sel = this.selectedLink && this.selectedLink.src === src && this.selectedLink.dst === dst;
       const hov = this.hoverLink && this.hoverLink.src === src && this.hoverLink.dst === dst;
       const cls = ['edge', sel ? 'selected' : '', hov ? 'hover' : ''].filter(Boolean).join(' ');
-      const width = Math.max(1, Math.min(10, Number(link.width) || 2));
-      const arrowSize = Math.max(4, Math.min(40, Number(link.arrowSize) || 6));
+      const width = Math.max(1, Math.min(10, Number(link.width) || 4));
+      const arrowSize = Math.max(4, Math.min(40, Number(link.arrowSize) || 14));
       const markerId = link.arrow === 'none' ? ''
         : ` marker-end="url(#${this.ensureMarker(sel ? 'sel' : 'normal', arrowSize)})"`;
-      const strokeAttr = width !== 2 ? ` stroke-width="${width}"` : '';
+      const strokeAttr = width !== 4 ? ` stroke-width="${width}"` : '';
       // 选中这条线时，把两端真正落在哪个"接口"画出来（换边时一眼能看见）
       if (sel) {
         for (const p of [path.start, path.end]) {

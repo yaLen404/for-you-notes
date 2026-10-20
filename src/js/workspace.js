@@ -54,7 +54,7 @@ export class Workspace {
     for (const title of bodyTitles(note.content)) {
       const target = this.findTitle(title, note.graph);
       if (target && !out.has(target.id)) {
-        out.set(target.id, { id: target.id, shape: 'line', arrow: 'solid', width: 2, arrowSize: 6 });
+        out.set(target.id, { id: target.id, shape: 'line', arrow: 'solid', width: 4, arrowSize: 14 });
       }
     }
     return out;

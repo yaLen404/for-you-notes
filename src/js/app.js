@@ -673,7 +673,7 @@ function currentLink() {
 
 /** 线宽和箭头共用一个档位：1~6，箭头 = 档位 × 3（最大 18） */
 function linkSize(link) {
-  const arrow = Number(link && link.arrowSize) || 6;
+  const arrow = Number(link && link.arrowSize) || 14;
   return Math.max(1, Math.min(20, Math.round((arrow - 2) / 2)));
 }
 
