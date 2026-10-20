@@ -249,7 +249,10 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
 .tool-btn {
   min-width: 24px; height: 22px; padding: 0 6px; border-radius: 4px;
   color: var(--muted); font-size: 12px;
+  /* 图标按钮要和文字按钮同一条中线，以前 svg 按基线排会偏高 */
+  display: inline-flex; align-items: center; justify-content: center;
 }
+.tool-btn svg { display: block; }
 .tool-btn:hover { background: var(--hover); color: var(--text); }
 .node-toolbar .sep { width: 1px; height: 14px; background: var(--line); margin: 0 4px; }
 .tool-btn.ico { min-width: 22px; padding: 0 3px; display: inline-flex; align-items: center; justify-content: center; }
