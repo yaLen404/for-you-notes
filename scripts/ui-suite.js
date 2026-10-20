@@ -1389,7 +1389,15 @@
     pointer(window, 'pointerup', hx + 70, hy + 50);
     await wait();
     if (!(rec.w > w0 + 30 && rec.h > h0 + 20)) fail(`尺寸没变 ${w0}x${h0} -> ${rec.w}x${rec.h}`);
-    return `${Math.round(w0)}x${Math.round(h0)} -> ${Math.round(rec.w)}x${Math.round(rec.h)}`;
+    const grown = `${Math.round(w0)}x${Math.round(h0)} -> ${Math.round(rec.w)}x${Math.round(rec.h)}`;
+    // 再往小拖：能小过以前 220x80 的下限
+    const [h2x, h2y] = center(h);
+    pointer(h, 'pointerdown', h2x, h2y);
+    pointer(window, 'pointermove', h2x - 400, h2y - 400);
+    pointer(window, 'pointerup', h2x - 400, h2y - 400);
+    await wait();
+    if (!(rec.w <= 140 && rec.h <= 60)) fail(`卡片的尺寸下限还是太大：${Math.round(rec.w)}x${Math.round(rec.h)}`);
+    return grown + `，再缩到 ${Math.round(rec.w)}x${Math.round(rec.h)}`;
   });
 
   await run('连线样式可改', async () => {

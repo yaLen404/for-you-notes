@@ -11,9 +11,9 @@ import { render as renderMarkdown } from './markdown.js';
 
 const HEADER_H = 32;
 const PAD = 12;
-const MIN_W = 220;
+const MIN_W = 120;
 const MAX_W = 720;
-const MIN_H = 80;
+const MIN_H = 52;
 const MAX_H = 760;
 const DEFAULT_LINES = 5;
 const LINE_H = 21;
