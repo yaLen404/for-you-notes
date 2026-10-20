@@ -79,7 +79,7 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
 .pane-right { flex: 1 1 auto; min-width: 0; background: var(--card); background-image: none; }
 
 .splitter { width: 5px; flex: 0 0 5px; cursor: col-resize; display: grid; place-items: center; background: var(--card); }
-.splitter-line { width: 1px; height: 100%; background: var(--line); opacity: 1; }
+.splitter-line { width: 1px; height: 100%; background: #ffffff; opacity: .55; }
 .splitter:hover .splitter-line { opacity: 1; }
 
 /* ---------------------------------------------------------------- 左栏头 */
