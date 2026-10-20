@@ -138,7 +138,7 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
 .card.colored { border-color: var(--c); background: color-mix(in srgb, var(--c) 8%, var(--card)); }
 .card.hover { border-color: color-mix(in srgb, var(--line) 55%, #ffffff); }
 .card.colored.hover { border-color: color-mix(in srgb, var(--c) 75%, #ffffff); }
-.card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
 /* 右键时轻轻圈一下落点那张卡片：只是提示，不是"选中" */
 .card.ctx { box-shadow: 0 0 0 2px rgba(255, 255, 255, .26); }
 .card.selected.ctx { box-shadow: 0 0 0 1px var(--accent), 0 0 0 3px rgba(255, 255, 255, .18); }
@@ -170,9 +170,8 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
   width: calc(8px / var(--z)); height: calc(8px / var(--z));
   background: #e8e8e8; border: 1px solid var(--bg);
   transform: translate(-50%, -50%);
-  display: none;
+  display: block; opacity: 0;
 }
-.card.selected .handle { display: block; }
 .handle[data-corner="nw"] { left: 0; top: 0; cursor: nwse-resize; }
 .handle[data-corner="ne"] { left: 100%; top: 0; cursor: nesw-resize; }
 .handle[data-corner="sw"] { left: 0; top: 100%; cursor: nesw-resize; }
@@ -182,12 +181,14 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
   width: calc(9px / var(--z)); height: calc(9px / var(--z));
   border-radius: 50%; background: #8a8a8a; border-color: var(--bg);
 }
-.card.hover .dot, .card.selected .dot { display: block; }
+/* 悬停整张卡片时四条边的圆点一起出现（不是只有靠近鼠标那个） */
+.card:hover .dot, .card.hover .dot { opacity: 1; }
 .dot[data-side="n"] { left: 50%; top: 0; cursor: crosshair; }
 .dot[data-side="s"] { left: 50%; top: 100%; cursor: crosshair; }
 .dot[data-side="w"] { left: 0; top: 50%; cursor: crosshair; }
 .dot[data-side="e"] { left: 100%; top: 50%; cursor: crosshair; }
 .dot.hot { background: var(--accent); }
+.card.selected .dot, .card.selected .handle { opacity: 0; }
 
 /* 拖拽预览线 */
 .preview-line { position: absolute; height: 1px; background: var(--accent); transform-origin: 0 0; pointer-events: none; }
