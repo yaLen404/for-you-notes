@@ -21,7 +21,8 @@ const dom = {
   toolClear: $('toolClear'), toolEdit: $('toolEdit'), toolTodo: $('toolTodo'), toolNew: $('toolNew'), toolDelete: $('toolDelete'),
   linkToolbar: $('linkToolbar'), linkCurve: $('linkCurve'), linkLine: $('linkLine'),
   linkArrowSolid: $('linkArrowSolid'), linkArrowHollow: $('linkArrowHollow'), linkArrowNone: $('linkArrowNone'),
-  linkSizeDown: $('linkSizeDown'), linkSizeVal: $('linkSizeVal'), linkSizeUp: $('linkSizeUp'),
+  linkWidthDown: $('linkWidthDown'), linkWidthVal: $('linkWidthVal'), linkWidthUp: $('linkWidthUp'),
+  linkArrowDown: $('linkArrowDown'), linkArrowVal: $('linkArrowVal'), linkArrowUp: $('linkArrowUp'),
   linkRepin: $('linkRepin'), linkRemove: $('linkRemove'),
   btnTidy: $('btnTidy'), btnUndo: $('btnUndo'), btnRedo: $('btnRedo'),
   btnZoomOut: $('btnZoomOut'), btnZoomReset: $('btnZoomReset'), btnZoomIn: $('btnZoomIn'), btnFit: $('btnFit'),
@@ -697,7 +698,8 @@ function syncLinkToolbar() {
   dom.linkArrowSolid.classList.toggle('active', arrow !== 'hollow' && arrow !== 'none');
   dom.linkArrowHollow.classList.toggle('active', arrow === 'hollow');
   dom.linkArrowNone.classList.toggle('active', arrow === 'none');
-  dom.linkSizeVal.textContent = String(linkSize(link));
+  dom.linkWidthVal.textContent = String(link ? (Number(link.width) || 2) : 2);
+  dom.linkArrowVal.textContent = String(link ? (Number(link.arrowSize) || 6) : 6);
   placeLinkToolbar();
 }
 
@@ -741,8 +743,16 @@ function bindLinkToolbar() {
   dom.linkArrowSolid.addEventListener('click', () => bumpLinkStyle({ arrow: 'solid' }));
   dom.linkArrowHollow.addEventListener('click', () => bumpLinkStyle({ arrow: 'hollow' }));
   dom.linkArrowNone.addEventListener('click', () => bumpLinkStyle({ arrow: 'none' }));
-  dom.linkSizeDown.addEventListener('click', () => bumpLinkSize(-1));
-  dom.linkSizeUp.addEventListener('click', () => bumpLinkSize(1));
+  const bump = (field, delta, lo, hi) => {
+    const link = currentLink();
+    const base = field === 'width' ? 2 : 6;
+    const now = link ? (Number(link[field]) || base) : base;
+    bumpLinkStyle({ [field]: Math.max(lo, Math.min(hi, now + delta)) });
+  };
+  dom.linkWidthDown.addEventListener('click', () => bump('width', -1, 1, 10));
+  dom.linkWidthUp.addEventListener('click', () => bump('width', 1, 1, 10));
+  dom.linkArrowDown.addEventListener('click', () => bump('arrowSize', -2, 4, 40));
+  dom.linkArrowUp.addEventListener('click', () => bump('arrowSize', 2, 4, 40));
   dom.linkRepin.addEventListener('click', () => { if (linkToolbarPair) repinLink(linkToolbarPair); });
   dom.linkRemove.addEventListener('click', () => {
     if (!linkToolbarPair) return;

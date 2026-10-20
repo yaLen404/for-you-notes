@@ -375,8 +375,8 @@ export class Canvas {
       const sel = this.selectedLink && this.selectedLink.src === src && this.selectedLink.dst === dst;
       const hov = this.hoverLink && this.hoverLink.src === src && this.hoverLink.dst === dst;
       const cls = ['edge', sel ? 'selected' : '', hov ? 'hover' : ''].filter(Boolean).join(' ');
-      const width = Math.max(1, Math.min(8, Number(link.width) || 2));
-      const arrowSize = Math.max(4, Math.min(18, Number(link.arrowSize) || 6));
+      const width = Math.max(1, Math.min(10, Number(link.width) || 2));
+      const arrowSize = Math.max(4, Math.min(40, Number(link.arrowSize) || 6));
       const markerId = link.arrow === 'none' ? ''
         : ` marker-end="url(#${this.ensureMarker(sel ? 'sel' : 'normal', arrowSize)})"`;
       const strokeAttr = width !== 2 ? ` stroke-width="${width}"` : '';
@@ -402,8 +402,9 @@ export class Canvas {
     const m = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
     m.setAttribute('id', id);
     m.setAttribute('viewBox', '0 0 10 10');
-    m.setAttribute('refX', String(size * 0.9));
-    m.setAttribute('refY', String(size * 0.5));
+    // viewBox 是 0..10，箭头尖在 (9,5)：refX/refY 用常量，箭头永远钉在线头上
+    m.setAttribute('refX', '9');
+    m.setAttribute('refY', '5');
     m.setAttribute('markerWidth', String(size));
     m.setAttribute('markerHeight', String(size));
     m.setAttribute('markerUnits', 'userSpaceOnUse');

@@ -250,8 +250,8 @@ function normalizeNote(data) {
       return {
         id: raw.id,
         shape: raw.shape === 'curve' ? 'curve' : 'line',
-      width: Math.max(1, Math.min(8, Number(raw.width) || 2)),
-      arrowSize: Math.max(4, Math.min(18, Number(raw.arrowSize) || 6)),
+      width: Math.max(1, Math.min(10, Number(raw.width) || 2)),
+      arrowSize: Math.max(4, Math.min(40, Number(raw.arrowSize) || 6)),
         arrow: ['solid', 'hollow', 'none'].includes(raw.arrow) ? raw.arrow : 'solid',
       };
     }

@@ -93,12 +93,18 @@
             <svg viewBox="0 0 16 14" aria-hidden="true"><path d="M1.5 12 L 14.5 2"/></svg>
           </button>
           <div class="sep"></div>
-          <span class="tool-glyph" title="粗细（线宽与箭头用同一档）">
-            <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7 h6" stroke-width="2"/><path d="M8 3 L 13 7 L 8 11 Z" fill="currentColor" stroke="none"/></svg>
+          <span class="tool-glyph" title="线条粗细">
+            <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7 h10" stroke-width="3.2"/></svg>
           </span>
-          <button class="tool-btn" id="linkSizeDown" title="更细更小">−</button>
-          <span class="tool-val big" id="linkSizeVal">2</span>
-          <button class="tool-btn" id="linkSizeUp" title="更粗更大">＋</button>
+          <button class="tool-btn" id="linkWidthDown" title="线条更细">−</button>
+          <span class="tool-val big" id="linkWidthVal">2</span>
+          <button class="tool-btn" id="linkWidthUp" title="线条更粗">＋</button>
+          <span class="tool-glyph" title="箭头大小">
+            <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7 h5"/><path d="M7 3 L 12 7 L 7 11 Z" fill="currentColor" stroke="none"/></svg>
+          </span>
+          <button class="tool-btn" id="linkArrowDown" title="箭头更小">−</button>
+          <span class="tool-val big" id="linkArrowVal">6</span>
+          <button class="tool-btn" id="linkArrowUp" title="箭头更大">＋</button>
           <div class="sep"></div>
           <button class="tool-btn ico" id="linkRepin" title="接口重新对准当前位置">
             <svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="4.2"/><path d="M7 1.4 v3 M7 9.6 v3 M1.4 7 h3 M9.6 7 h3"/></svg>
