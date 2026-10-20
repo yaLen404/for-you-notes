@@ -76,10 +76,10 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
 .pane-left { background: var(--bg); }
 /* 必须 flex:1：右栏是"剩下的全部"，否则内容为空时它会缩成一条，
    窗口右边就会留下一大片黑（这就是"右边这个大的黑边"） */
-.pane-right { flex: 1 1 auto; min-width: 0; background: var(--card); }
+.pane-right { flex: 1 1 auto; min-width: 0; background: var(--card); background-image: none; }
 
-.splitter { width: 5px; flex: 0 0 5px; cursor: col-resize; display: grid; place-items: center; }
-.splitter-line { width: 1px; height: 100%; background: #ffffff; opacity: .55; }
+.splitter { width: 5px; flex: 0 0 5px; cursor: col-resize; display: grid; place-items: center; background: var(--card); }
+.splitter-line { width: 1px; height: 100%; background: var(--line); opacity: 1; }
 .splitter:hover .splitter-line { opacity: 1; }
 
 /* ---------------------------------------------------------------- 左栏头 */
