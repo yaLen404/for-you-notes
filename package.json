@@ -1,6 +1,6 @@
 {
   "name": "for-you-notes",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "本地优先的双栏知识图谱笔记：左栏画布，右栏富文本笔记",
   "main": "main.js",
   "type": "commonjs",

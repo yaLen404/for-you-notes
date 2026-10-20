@@ -1112,7 +1112,7 @@ function showHelp() {
 function showAbout() {
   modal('关于 For You Notes', `
     <div class="help">
-      <p><strong>For You Notes 1.0.0</strong></p>
+      <p><strong>For You Notes 1.0.1</strong></p>
       <p>一个装在自己电脑上的双栏笔记程序：左栏是知识体系图，右栏是选中笔记的内容。
          笔记、图片、备份都存在本机，<b>不联网也能用</b>，也不会上传任何内容。</p>
       <p>数据放在 %LOCALAPPDATA%\\ForYouNotes\\data：一篇笔记一个 JSON 文件，图片在 data\\image，
