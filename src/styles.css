@@ -181,8 +181,8 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
   width: calc(9px / var(--z)); height: calc(9px / var(--z));
   border-radius: 50%; background: #8a8a8a; border-color: var(--bg);
 }
-/* 悬停整张卡片时四条边的圆点一起出现（不是只有靠近鼠标那个） */
-.card:hover .dot, .card.hover .dot { opacity: 1; }
+/* 只有靠近鼠标的那一个圆点会亮（超过阈值四个都不显示） */
+.dot.near { opacity: 1; }
 .dot[data-side="n"] { left: 50%; top: 0; cursor: crosshair; }
 .dot[data-side="s"] { left: 50%; top: 100%; cursor: crosshair; }
 .dot[data-side="w"] { left: 0; top: 50%; cursor: crosshair; }

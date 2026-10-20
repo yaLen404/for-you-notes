@@ -473,6 +473,31 @@ export class Canvas {
     }
   }
 
+  /** 只让"离鼠标最近的那一个圆点"出现（超过阈值就四个都不显示） */
+  paintDotNear(cx, cy) {
+    for (const d of this.cardsEl.querySelectorAll('.dot.near')) d.classList.remove('near');
+    const card = this.hover ? this.cardsEl.querySelector('.card[data-id="' + this.hover + '"]') : null;
+    if (!card || cx == null) return;
+    const r = card.getBoundingClientRect();
+    const pts = {
+      n: [r.left + r.width / 2, r.top],
+      s: [r.left + r.width / 2, r.bottom],
+      w: [r.left, r.top + r.height / 2],
+      e: [r.right, r.top + r.height / 2],
+    };
+    let best = null;
+    let bestD = Infinity;
+    for (const [side, [x, y]] of Object.entries(pts)) {
+      const d = Math.hypot(cx - x, cy - y);
+      if (d < bestD) { bestD = d; best = side; }
+    }
+    const LIMIT = 34;
+    if (best && bestD <= LIMIT) {
+      const dot = card.querySelector('.dot[data-side="' + best + '"]');
+      if (dot) dot.classList.add('near');
+    }
+  }
+
   hasOverlaps() {
     const recs = [...this.records.values()];
     for (let i = 0; i < recs.length; i += 1) {
@@ -684,6 +709,13 @@ export class Canvas {
     this.root.addEventListener('dblclick', (e) => this.onDoubleClick(e));
     this.root.addEventListener('contextmenu', (e) => this.onContextMenu(e));
     this.root.addEventListener('pointerover', (e) => this.onHover(e));
+    // pointerover 只在进入元素时触发一次；圆点"跟着鼠标走"要靠 pointermove
+    this.root.addEventListener('pointermove', (e) => {
+      if (this._drag) return;
+      const card = e.target.closest ? e.target.closest('.card') : null;
+      if (card) this.hover = card.dataset.id;
+      this.paintDotNear(e.clientX, e.clientY);
+    });
     this.root.addEventListener('pointerleave', () => {
       if (this.hover) { this.hover = null; this.paintHover(); }
       this._lastPoint = null;   // 鼠标离开画布后，"光标位置"就不作数了
@@ -698,6 +730,7 @@ export class Canvas {
       this.hover = id;
       this.paintHover();
     }
+    this.paintDotNear(e.clientX, e.clientY);
   }
 
   onPointerDown(e) {
