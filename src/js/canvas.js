@@ -415,6 +415,15 @@ export class Canvas {
     return id;
   }
 
+  /** 尺寸变了：把涉及这张卡片的连线接口解冻，下次渲染会按新几何重新对准 */
+  repinAround(id) {
+    for (const note of this.ws.notesOf()) {
+      for (const link of note.links || []) {
+        if (note.id === id || link.id === id) this.ws.clearSides(note.id, link.id);
+      }
+    }
+  }
+
   /** 拖拽时只更新受影响的几何，不做整树重建 */
   updateCardPosition(id) {
     const rec = this.records.get(id);
@@ -833,6 +842,8 @@ export class Canvas {
       return;
     }
     if (d.kind === 'resize') {
+      // 尺寸变了，原来的"接口"可能已经对着空气 → 让相关连线按新几何重新对准
+      this.repinAround && this.repinAround(d.id);
       const dx = (e.clientX - d.startX) / this.zoom;
       const dy = (e.clientY - d.startY) / this.zoom;
       const rec = this.records.get(d.id);

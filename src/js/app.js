@@ -21,8 +21,7 @@ const dom = {
   toolClear: $('toolClear'), toolEdit: $('toolEdit'), toolTodo: $('toolTodo'), toolNew: $('toolNew'), toolDelete: $('toolDelete'),
   linkToolbar: $('linkToolbar'), linkCurve: $('linkCurve'), linkLine: $('linkLine'),
   linkArrowSolid: $('linkArrowSolid'), linkArrowHollow: $('linkArrowHollow'), linkArrowNone: $('linkArrowNone'),
-  linkWidthDown: $('linkWidthDown'), linkWidthVal: $('linkWidthVal'), linkWidthUp: $('linkWidthUp'),
-  linkArrowDown: $('linkArrowDown'), linkArrowVal: $('linkArrowVal'), linkArrowUp: $('linkArrowUp'),
+  linkSizeDown: $('linkSizeDown'), linkSizeVal: $('linkSizeVal'), linkSizeUp: $('linkSizeUp'),
   linkRepin: $('linkRepin'), linkRemove: $('linkRemove'),
   btnTidy: $('btnTidy'), btnUndo: $('btnUndo'), btnRedo: $('btnRedo'),
   btnZoomOut: $('btnZoomOut'), btnZoomReset: $('btnZoomReset'), btnZoomIn: $('btnZoomIn'), btnFit: $('btnFit'),
@@ -674,18 +673,23 @@ function currentLink() {
 
 /** 线宽和箭头共用一个档位：1~6，箭头 = 档位 × 3（最大 18） */
 function linkSize(link) {
-  const w = Number(link && link.width) || 2;
-  return Math.max(1, Math.min(6, Math.round(w)));
+  const arrow = Number(link && link.arrowSize) || 6;
+  return Math.max(1, Math.min(20, Math.round((arrow - 2) / 2)));
+}
+
+function linkWidthFor(size) {
+  // 档位 2 对应默认线宽 2；每两档 +1，最多 8
+  return Math.max(1, Math.min(8, 1 + Math.floor(size / 2)));
 }
 
 function linkArrowFor(size) {
-  return Math.max(4, Math.min(18, size * 3));
+  return Math.max(4, Math.min(40, 2 + size * 2));
 }
 
 function bumpLinkSize(delta) {
   const link = currentLink();
-  const next = Math.max(1, Math.min(6, linkSize(link) + delta));
-  bumpLinkStyle({ width: next, arrowSize: linkArrowFor(next) });
+  const next = Math.max(1, Math.min(20, linkSize(link) + delta));
+  bumpLinkStyle({ width: linkWidthFor(next), arrowSize: linkArrowFor(next) });
 }
 
 function syncLinkToolbar() {
@@ -698,8 +702,7 @@ function syncLinkToolbar() {
   dom.linkArrowSolid.classList.toggle('active', arrow !== 'hollow' && arrow !== 'none');
   dom.linkArrowHollow.classList.toggle('active', arrow === 'hollow');
   dom.linkArrowNone.classList.toggle('active', arrow === 'none');
-  dom.linkWidthVal.textContent = String(link ? (Number(link.width) || 2) : 2);
-  dom.linkArrowVal.textContent = String(link ? (Number(link.arrowSize) || 6) : 6);
+  dom.linkSizeVal.textContent = String(linkSize(link));
   placeLinkToolbar();
 }
 
@@ -743,16 +746,8 @@ function bindLinkToolbar() {
   dom.linkArrowSolid.addEventListener('click', () => bumpLinkStyle({ arrow: 'solid' }));
   dom.linkArrowHollow.addEventListener('click', () => bumpLinkStyle({ arrow: 'hollow' }));
   dom.linkArrowNone.addEventListener('click', () => bumpLinkStyle({ arrow: 'none' }));
-  const bump = (field, delta, lo, hi) => {
-    const link = currentLink();
-    const base = field === 'width' ? 2 : 6;
-    const now = link ? (Number(link[field]) || base) : base;
-    bumpLinkStyle({ [field]: Math.max(lo, Math.min(hi, now + delta)) });
-  };
-  dom.linkWidthDown.addEventListener('click', () => bump('width', -1, 1, 10));
-  dom.linkWidthUp.addEventListener('click', () => bump('width', 1, 1, 10));
-  dom.linkArrowDown.addEventListener('click', () => bump('arrowSize', -2, 4, 40));
-  dom.linkArrowUp.addEventListener('click', () => bump('arrowSize', 2, 4, 40));
+  dom.linkSizeDown.addEventListener('click', () => bumpLinkSize(-1));
+  dom.linkSizeUp.addEventListener('click', () => bumpLinkSize(1));
   dom.linkRepin.addEventListener('click', () => { if (linkToolbarPair) repinLink(linkToolbarPair); });
   dom.linkRemove.addEventListener('click', () => {
     if (!linkToolbarPair) return;

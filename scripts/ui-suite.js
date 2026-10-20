@@ -1443,29 +1443,25 @@
     // 每次重画都会换掉 path 节点，取最新的那个
     const edge = () => document.querySelector('path.edge[data-src="' + a.id + '"][data-dst="' + b.id + '"]');
     if (link().width !== 2) fail('初始线宽不是 2');
-    realClick(document.getElementById('linkWidthUp'));
-    realClick(document.getElementById('linkWidthUp'));
+    realClick(document.getElementById('linkSizeUp'));
+    realClick(document.getElementById('linkSizeUp'));
     await wait(280);
-    if (link().width !== 4) fail('线宽没加上去：' + link().width);
+    if (link().width !== 3) fail('线宽没跟着档位变：' + link().width);
 
     const p1 = edge();
     if (!p1) fail('连线节点不见了');
-    if (p1.getAttribute('stroke-width') !== '4') fail('线宽没画到 path 上：' + p1.getAttribute('stroke-width'));
+    if (p1.getAttribute('stroke-width') !== '3') fail('线宽没画到 path 上：' + p1.getAttribute('stroke-width'));
     await wait(120);
-    // 箭头单独调：两次各 +2
-    realClick(document.getElementById('linkArrowUp'));
-    realClick(document.getElementById('linkArrowUp'));
-    await wait(280);
-    if (link().arrowSize !== 10) fail('箭头没有单独加到 10：' + link().arrowSize);
+    // 同一档位把箭头一起带上去（2 档 = 箭头 6；4 档 = 箭头 12）
+    if (link().arrowSize !== 10) fail('箭头没跟着档位变：' + link().arrowSize);
     const marker = (edge() || { getAttribute: () => '' }).getAttribute('marker-end') || '';
     if (!marker.includes('-10')) fail('箭头 marker 没换尺寸：' + marker);
-    if (document.getElementById('linkWidthVal').textContent !== '4') fail('线宽数字没同步');
-    if (document.getElementById('linkArrowVal').textContent !== '10') fail('箭头数字没同步');
+    if (document.getElementById('linkSizeVal').textContent !== '4') fail('档位数字没同步');
     // 收起
     c.selectedLink = null;
     placeToolbarForTest();
     await wait(150);
-    return '工具栏在线条上方，线宽 2→4、箭头 6→10';
+    return '工具栏在线条上方，档位 2→4（线宽 2→3、箭头 6→10）';
   });
 
   await run('连线样式可改', async () => {
