@@ -608,3 +608,10 @@ html, body, #app, #canvas, #preview, .canvas, .preview, .pane {
   font-size: 13px; font-weight: 600; min-width: 18px; color: var(--text);
   background: var(--hover); border-radius: 4px; line-height: 18px; text-align: center;
 }
+
+/* 卡片右上角的"待办"标记 */
+.card-mark {
+  margin-left: auto; color: var(--accent-soft);
+  font-size: 12px; line-height: 1; flex: 0 0 auto;
+}
+.node-toolbar .tool-btn svg { width: 13px; height: 13px; }

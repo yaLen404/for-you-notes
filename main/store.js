@@ -262,6 +262,7 @@ function normalizeNote(data) {
     title: String(data.title || ''),
     content: String(data.content || ''),
     color: typeof data.color === 'string' ? data.color : '',
+    todo: Boolean(data.todo),
     created: Number(data.created) || nowMs(),
     updated: Number(data.updated) || nowMs(),
     graph: String(data.graph || ''),

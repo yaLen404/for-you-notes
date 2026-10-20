@@ -18,7 +18,7 @@ const dom = {
   canvas: $('canvas'), world: $('world'), cards: $('cards'), edges: $('edges'),
   edgeLayer: $('edgeLayer'), edgeHitLayer: $('edgeHitLayer'), canvasEmpty: $('canvasEmpty'),
   nodeToolbar: $('nodeToolbar'), swatches: $('swatches'),
-  toolClear: $('toolClear'), toolEdit: $('toolEdit'), toolNew: $('toolNew'), toolDelete: $('toolDelete'),
+  toolClear: $('toolClear'), toolEdit: $('toolEdit'), toolTodo: $('toolTodo'), toolNew: $('toolNew'), toolDelete: $('toolDelete'),
   linkToolbar: $('linkToolbar'), linkCurve: $('linkCurve'), linkLine: $('linkLine'),
   linkArrowSolid: $('linkArrowSolid'), linkArrowHollow: $('linkArrowHollow'), linkArrowNone: $('linkArrowNone'),
   linkSizeDown: $('linkSizeDown'), linkSizeVal: $('linkSizeVal'), linkSizeUp: $('linkSizeUp'),
@@ -418,6 +418,7 @@ function buildSwatches() {
   dom.toolClear.addEventListener('click', () => setCardColor(''));
   dom.toolEdit.addEventListener('click', () => { if (canvas.selected) pane.focusEditor(); });
   dom.toolNew.addEventListener('click', () => { if (canvas.selected) branchFrom(canvas.selected); });
+  if (dom.toolTodo) dom.toolTodo.addEventListener('click', () => toggleNoteTodo());
   dom.toolDelete.addEventListener('click', () => { if (canvas.selected) deleteNote(canvas.selected); });
 }
 
@@ -439,6 +440,21 @@ function syncSwatches() {
   for (const btn of dom.swatches.querySelectorAll('.swatch')) {
     btn.classList.toggle('active', btn.dataset.color === current);
   }
+}
+
+
+/** 给选中的卡片打"待办"标记（再点一次取消） */
+function toggleNoteTodo() {
+  const id = canvas.selected;
+  const note = id && ws.note(id);
+  if (!note) return;
+  pushUndo();
+  note.todo = !note.todo;
+  note.updated = Date.now();
+  canvas.render();
+  pane.renderMeta();
+  updateStatus();
+  scheduleSave();
 }
 
 function placeToolbar() {

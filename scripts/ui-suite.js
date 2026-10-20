@@ -1475,6 +1475,26 @@
     return '直线 + 空心箭头';
   });
 
+  await run('工具条上的「标记」给卡片打待办，再点取消', async () => {
+    const note = ws.notesOf()[0];
+    f.selectNote(note.id);
+    await wait(260);
+    const btn = document.getElementById('toolTodo');
+    if (!btn) fail('工具条上没有标记按钮');
+    const card = () => document.querySelector('.card[data-id="' + note.id + '"]');
+    if (!card()) fail('找不到卡片');
+    if (card().querySelector('.card-mark')) fail('一开始就有待办标记');
+    realClick(btn);
+    await wait(300);
+    if (!card().querySelector('.card-mark')) fail('点了标记但没出现待办图标');
+    if (!ws.note(note.id).todo) fail('数据里没记上 todo');
+    realClick(btn);
+    await wait(300);
+    if (card().querySelector('.card-mark')) fail('再点一次标记没消失');
+    if (ws.note(note.id).todo) fail('数据里的 todo 没清掉');
+    return '标记 → 出现 ☑ → 再点消失';
+  });
+
   await run('选中卡片浮出工具条', async () => {
     const note = ws.notesOf()[1] || ws.notesOf()[0];
     f.selectNote(note.id);
