@@ -25,6 +25,8 @@ const GRID = 24;
 const ICON = '<svg class="card-icon" viewBox="0 0 11 13" fill="none" stroke="currentColor" ' +
   'stroke-width="1"><path d="M1.5 1.5h5l3 3v7h-8z"/><path d="M6.5 1.5v3h3"/></svg>';
 
+const SIDE_ALIAS = { n: 'top', s: 'bottom', w: 'left', e: 'right' };
+
 export class Canvas {
   constructor(dom, ws, hooks = {}) {
     this.root = dom.canvas;
@@ -68,6 +70,11 @@ export class Canvas {
 
   // ---------------------------------------------------------------- 基础
   get canvasRect() { return this.root.getBoundingClientRect(); }
+
+  /** 卡片四边圆点用 n/s/w/e 标记，几何模块只认 top/right/bottom/left */
+  normSide(side) {
+    return SIDE_ALIAS[side] || side;
+  }
 
   toScreen(p) {
     const r = this.canvasRect;
@@ -357,6 +364,7 @@ export class Canvas {
       const rb = { x: b.x, y: b.y, w: b.w, h: b.h };
       // 接口是定死的：没有记录时按连接时的几何算一次并记下来，之后再怎么挪都不换边
       let sides = this.ws.getSides(src, dst);
+      if (sides) sides = { from: this.normSide(sides.from), to: this.normSide(sides.to) };
       if (!sides) {
         const [from, to] = G.facingSides(ra, rb);
         sides = { from, to };
@@ -694,7 +702,7 @@ export class Canvas {
       const card = dot.closest('.card');
       const id = card.dataset.id;
       const rec = this.records.get(id);
-      const side = dot.dataset.side;
+      const side = this.normSide(dot.dataset.side);
       const anchor = G.anchor({ x: rec.x, y: rec.y, w: rec.w, h: rec.h }, side);
       this._drag = { kind: 'link', src: id, side, start: this.toScreen(anchor) };
       this.showPreviewLine(this.toScreen(anchor), this.localPoint(e));

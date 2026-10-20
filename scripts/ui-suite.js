@@ -999,6 +999,36 @@
     return '写入并读回成功';
   });
 
+  await run('从哪条边的圆点拉线，就钉在哪条边', async () => {
+    const notes = ws.notesOf();
+    const src = notes[0];
+    f.selectNote(src.id);
+    await wait(220);
+    const sides = ['e', 'w', 'n', 's'];
+    const seen = [];
+    for (let i = 0; i < sides.length; i += 1) {
+      const target = notes.find((n) => n.id !== src.id && !ws.outgoingAttr(src).has(n.id));
+      if (!target) break;
+      const dot = document.querySelector('.card.selected .dot[data-side="' + sides[i] + '"]');
+      if (!dot) fail('没有 ' + sides[i] + ' 边的圆点');
+      const [dx, dy] = center(dot);
+      pointer(dot, 'pointerdown', dx, dy);
+      const used = c._drag ? c._drag.side : null;
+      const [tx, ty] = center(cardOf(target.id));
+      pointer(window, 'pointermove', tx, ty);
+      pointer(window, 'pointerup', tx, ty);
+      await wait(220);
+      const pinned = ws.getSides(src.id, target.id);
+      if (!used) fail(sides[i] + ' 边按下去没有开始拉线');
+      if (['n', 's', 'w', 'e'].includes(used)) fail('拖拽记录的边没归一化：' + used);
+      if (!pinned) fail(sides[i] + ' 边拉线后没有记录接口');
+      if (pinned.from !== used) fail('钉住的边和拖出来的不一致：' + pinned.from + ' vs ' + used);
+      seen.push(sides[i] + '→' + pinned.from);
+    }
+    if (seen.length < 2) fail('只测到 ' + seen.length + ' 条边');
+    return seen.join(' ');
+  });
+
   await run('从手柄拉线建立属性连接', async () => {
     const notes = ws.notesOf();
     const src = notes[0];
