@@ -57,6 +57,16 @@
   };
   const fail = (msg) => { throw new Error(msg); };
   const placeToolbarForTest = () => f.setFocusOnly(false);
+  /** 真实鼠标路径的点击：pointdown → pointerup → click（能暴露"指针被抢走"的问题） */
+  const realClick = (el) => {
+    const r = el.getBoundingClientRect();
+    const x = Math.round(r.left + r.width / 2);
+    const y = Math.round(r.top + r.height / 2);
+    const target = document.elementFromPoint(x, y) || el;
+    pointer(target, 'pointerdown', x, y);
+    pointer(window, 'pointerup', x, y);
+    target.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: x, clientY: y }));
+  };
   const closePopoverForTest = () => document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
   const pointer = (el, type, x, y, extra = {}) => el.dispatchEvent(new PointerEvent(type, Object.assign({
     bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: 1, button: 0, isPrimary: true,
@@ -1428,14 +1438,14 @@
     // 每次重画都会换掉 path 节点，取最新的那个
     const edge = () => document.querySelector('path.edge[data-src="' + a.id + '"][data-dst="' + b.id + '"]');
     if (link().width !== 2) fail('初始线宽不是 2');
-    document.getElementById('linkWidthUp').click();
-    document.getElementById('linkWidthUp').click();
+    realClick(document.getElementById('linkWidthUp'));
+    realClick(document.getElementById('linkWidthUp'));
     await wait(280);
     if (link().width !== 4) fail('线宽没加上去：' + link().width);
     const p1 = edge();
     if (!p1) fail('连线节点不见了');
     if (p1.getAttribute('stroke-width') !== '4') fail('线宽没画到 path 上：' + p1.getAttribute('stroke-width'));
-    document.getElementById('linkArrowUp').click();
+    realClick(document.getElementById('linkArrowUp'));
     await wait(280);
     if (link().arrowSize !== 8) fail('箭头大小没变：' + link().arrowSize);
     const marker = (edge() || { getAttribute: () => '' }).getAttribute('marker-end') || '';

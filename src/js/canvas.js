@@ -739,7 +739,7 @@ export class Canvas {
     // 画布上浮着的控件（缩放条 / 左下工具条 / 卡片工具条）自己处理点击；
     // 以前这里会把它们当成"空白处按下"，接着 setPointerCapture 抢走指针，
     // 结果按钮的 click 永远不来 —— 表现就是"缩放条点了没反应"。
-    if (t.closest && t.closest('.pill, .toolbar')) return;
+    if (t.closest && t.closest('.pill, .toolbar, .node-toolbar')) return;
     const handle = t.closest('.handle');
     const dot = t.closest('.dot');
     const cardEl = t.closest('.card');
