@@ -78,7 +78,17 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
    窗口右边就会留下一大片黑（这就是"右边这个大的黑边"） */
 .pane-right { flex: 1 1 auto; min-width: 0; background: var(--card); background-image: none; }
 
-.splitter { width: 5px; flex: 0 0 5px; cursor: col-resize; display: grid; place-items: center; background: var(--card); }
+/* 视觉只有 1px：左边贴画布、右边贴笔记栏，两边都不出现"别人的底色"。
+   拖拽热区用不可见的 ::before 撑到 7px，好抓。 */
+.splitter {
+  position: relative; width: 1px; flex: 0 0 1px;
+  cursor: col-resize; display: grid; place-items: center;
+  background: transparent;
+}
+.splitter::before {
+  content: ''; position: absolute; top: 0; bottom: 0;
+  left: -3px; right: -3px;
+}
 .splitter-line { width: 1px; height: 100%; background: #ffffff; opacity: .55; }
 .splitter:hover .splitter-line { opacity: 1; }
 
