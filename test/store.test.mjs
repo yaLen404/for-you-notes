@@ -79,7 +79,7 @@ test('兼容旧的 links 字符串数组', () => {
   const store = new Store(dir);
   store.saveAll(state, notes);
   const again = new Store(dir).load();
-  assert.deepEqual(again.notes.n1.links, [{ id: 'n2', shape: 'curve', arrow: 'solid' }]);
+  assert.deepEqual(again.notes.n1.links, [{ id: 'n2', shape: 'line', arrow: 'solid' }]);
 });
 
 test('状态里保留"右栏上次看的笔记"', () => {

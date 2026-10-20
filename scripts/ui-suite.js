@@ -1023,6 +1023,9 @@
       if (['n', 's', 'w', 'e'].includes(used)) fail('拖拽记录的边没归一化：' + used);
       if (!pinned) fail(sides[i] + ' 边拉线后没有记录接口');
       if (pinned.from !== used) fail('钉住的边和拖出来的不一致：' + pinned.from + ' vs ' + used);
+      const link = (ws.note(src.id).links || []).find((l) => l.id === target.id);
+      if (!link) fail('连线没写进笔记');
+      if (link.shape !== 'line') fail('新连线默认不是直线：' + link.shape);
       seen.push(sides[i] + '→' + pinned.from);
     }
     if (seen.length < 2) fail('只测到 ' + seen.length + ' 条边');

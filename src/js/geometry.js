@@ -69,7 +69,7 @@ export function quadAt(p0, c, p2, t) {
  * 卡片移动、改尺寸都不换（这是需求：接口要定死）。
  * 没给 sides 时才按当前几何算一对。
  */
-export function linkPath(a, b, shape = SHAPE_CURVE, sides = null) {
+export function linkPath(a, b, shape = SHAPE_LINE, sides = null) {
   const [autoA, autoB] = facingSides(a, b);
   const sideA = sides && sides.from ? sides.from : autoA;
   const sideB = sides && sides.to ? sides.to : autoB;

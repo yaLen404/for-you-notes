@@ -54,7 +54,7 @@ export class Workspace {
     for (const title of bodyTitles(note.content)) {
       const target = this.findTitle(title, note.graph);
       if (target && !out.has(target.id)) {
-        out.set(target.id, { id: target.id, shape: 'curve', arrow: 'solid' });
+        out.set(target.id, { id: target.id, shape: 'line', arrow: 'solid' });
       }
     }
     return out;
@@ -201,7 +201,7 @@ export class Workspace {
       src.links = src.links || [];
       src.links.push({
         id: dstId,
-        shape: style.shape === 'line' ? 'line' : 'curve',
+        shape: style.shape === 'curve' ? 'curve' : 'line',
         arrow: ['solid', 'hollow', 'none'].includes(style.arrow) ? style.arrow : 'solid',
       });
     }

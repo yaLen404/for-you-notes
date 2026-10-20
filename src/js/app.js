@@ -630,7 +630,7 @@ function openLinkMenu(pair, x, y) {
   const note = ws.note(pair.src);
   const link = note && (note.links || []).find((l) => l.id === pair.dst);
   openPopover([
-    { label: '曲线', checked: !link || link.shape !== 'line', action: () => setLinkShape(pair, 'curve') },
+    { label: '曲线', checked: Boolean(link && link.shape === 'curve'), action: () => setLinkShape(pair, 'curve') },
     { label: '直线', checked: Boolean(link && link.shape === 'line'), action: () => setLinkShape(pair, 'line') },
     { sep: true },
     { label: '实心箭头', checked: !link || link.arrow !== 'hollow' && link.arrow !== 'none', action: () => setLinkArrow(pair, 'solid') },

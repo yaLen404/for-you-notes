@@ -245,11 +245,11 @@ class Store {
 // ---------------------------------------------------------------- 规范化
 function normalizeNote(data) {
   const links = Array.isArray(data.links) ? data.links.map((raw) => {
-    if (typeof raw === 'string') return { id: raw, shape: 'curve', arrow: 'solid' };
+    if (typeof raw === 'string') return { id: raw, shape: 'line', arrow: 'solid' };
     if (raw && raw.id) {
       return {
         id: raw.id,
-        shape: raw.shape === 'line' ? 'line' : 'curve',
+        shape: raw.shape === 'curve' ? 'curve' : 'line',
         arrow: ['solid', 'hollow', 'none'].includes(raw.arrow) ? raw.arrow : 'solid',
       };
     }
