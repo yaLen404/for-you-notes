@@ -1429,11 +1429,16 @@
     const rect = tb.getBoundingClientRect();
     const path = document.querySelector('path.edge[data-src="' + a.id + '"][data-dst="' + b.id + '"]');
     if (!path) fail('找不到这条线的 path');
-    const clickY = Math.round(r.top + r.height / 2);
-    // 工具栏要贴着这条线（别跑到屏幕另一头去）
-    if (Math.abs(rect.top + rect.height / 2 - clickY) > 160) {
-      fail('工具栏离连线太远：' + Math.round(rect.top) + ' vs ' + clickY);
-    }
+    // 工具栏必须在"连线中点"的正上方、并且水平居中
+    const ra2 = c.records.get(a.id);
+    const rb2 = c.records.get(b.id);
+    const canvasBox = document.getElementById('canvas').getBoundingClientRect();
+    const ma = c.toScreen([ra2.x + ra2.w / 2, ra2.y + ra2.h / 2]);
+    const mb = c.toScreen([rb2.x + rb2.w / 2, rb2.y + rb2.h / 2]);
+    const midX = (ma[0] + mb[0]) / 2 + canvasBox.left;
+    const midY = (ma[1] + mb[1]) / 2 + canvasBox.top;
+    if (rect.bottom > midY + 4) fail('工具栏没在连线上方：' + Math.round(rect.bottom) + ' vs ' + Math.round(midY));
+    if (Math.abs(rect.left + rect.width / 2 - midX) > 60) fail('工具栏没对准连线中点');
     const link = () => ws.note(a.id).links.find((l) => l.id === b.id);
     // 每次重画都会换掉 path 节点，取最新的那个
     const edge = () => document.querySelector('path.edge[data-src="' + a.id + '"][data-dst="' + b.id + '"]');

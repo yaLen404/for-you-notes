@@ -638,11 +638,9 @@ function openContextMenu(kind, payload, x, y) {
 
 // ---------------------------------------------------------------- 连线工具栏
 let linkToolbarPair = null;
-let linkToolbarPos = { x: 0, y: 0 };
 
-function showLinkToolbar(pair, x, y) {
+function showLinkToolbar(pair) {
   linkToolbarPair = pair;
-  linkToolbarPos = { x: x || 0, y: y || 0 };
   if (!dom.linkToolbar) return;
   dom.linkToolbar.hidden = false;
   syncLinkToolbar();
@@ -676,11 +674,24 @@ function syncLinkToolbar() {
 
 function placeLinkToolbar() {
   const el = dom.linkToolbar;
-  if (!el || el.hidden) return;
+  if (!el || el.hidden || !linkToolbarPair) return;
+  const a = canvas.records.get(linkToolbarPair.src);
+  const b = canvas.records.get(linkToolbarPair.dst);
+  if (!a || !b) return;
+  // 用画布内部坐标：工具条就挂在 .canvas 里，和卡片的坐标体系一致
+  const ma = canvas.toScreen([a.x + a.w / 2, a.y + a.h / 2]);
+  const mb = canvas.toScreen([b.x + b.w / 2, b.y + b.h / 2]);
+  const midX = (ma[0] + mb[0]) / 2;
+  const midY = (ma[1] + mb[1]) / 2;
   const w = el.offsetWidth;
   const h = el.offsetHeight;
-  el.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, linkToolbarPos.x - w / 2)) + 'px';
-  el.style.top = Math.max(8, linkToolbarPos.y - h - 14) + 'px';
+  const cw = dom.canvas.clientWidth;
+  const ch = dom.canvas.clientHeight;
+  // 永远放在连线中点的上方；上方放不下再退到下方
+  let top = midY - h - 14;
+  if (top < 6) top = midY + 16;
+  el.style.left = Math.max(6, Math.min(cw - w - 6, midX - w / 2)) + 'px';
+  el.style.top = Math.max(6, Math.min(ch - h - 6, top)) + 'px';
 }
 
 /** 改这条线的样式（粗细 / 箭头大小也走这里） */
