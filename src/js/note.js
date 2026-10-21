@@ -67,10 +67,6 @@ export class NotePane {
     // 光标离开笔记（点画布、点别的笔记、切窗口）→ 把正在改的源码块提交掉
     document.addEventListener('pointerdown', () => this.scheduleLeave(), true);
     document.addEventListener('selectionchange', () => this.paintCurrentBlock());
-    // Esc 关掉右键块菜单
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') this.closeBlockMenu();
-    });
     document.addEventListener('focusin', (e) => {
       if (e.target && this.dom.root && !this.dom.root.contains(e.target)) this.scheduleLeave();
     });
