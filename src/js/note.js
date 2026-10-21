@@ -331,6 +331,9 @@ export class NotePane {
       if (!this.note) return;
       const active = document.activeElement;
       if (active && active.closest && active.closest('.blk-txt')) return;
+      // 正在选一段字：重排 DOM 会把选区弄没，先跳过
+      const selNow = window.getSelection();
+      if (selNow && !selNow.isCollapsed && selNow.toString()) return;
       this.renderBlocks();
     }, 120);
   }
@@ -656,15 +659,22 @@ export class NotePane {
     // 富文本块：把光标放进去（真实点击时浏览器已经放过，这里兜底）
     const txt = blk.querySelector('.blk-txt');
     if (txt) {
-      const range = document.caretRangeFromPoint
-        ? document.caretRangeFromPoint(e.clientX || 0, e.clientY || 0)
-        : null;
-      const sel = window.getSelection();
-      if (range && txt.contains(range.startContainer)) {
-        sel.removeAllRanges();
-        sel.addRange(range);
-      } else if (!sel || !sel.rangeCount || !txt.contains(sel.anchorNode)) {
-        this.caretAt(index, 'end');
+      // 已经有"选了一段字"的选区（刚拖选完）→ 别动它，
+      // 否则拖选松手后浏览器补发的 click 会把选区收成一点
+      const selNow = window.getSelection();
+      const keepSelection = selNow && !selNow.isCollapsed && selNow.rangeCount
+        && txt.contains(selNow.anchorNode);
+      if (!keepSelection) {
+        const range = document.caretRangeFromPoint
+          ? document.caretRangeFromPoint(e.clientX || 0, e.clientY || 0)
+          : null;
+        const sel = window.getSelection();
+        if (range && txt.contains(range.startContainer)) {
+          sel.removeAllRanges();
+          sel.addRange(range);
+        } else if (!sel || !sel.rangeCount || !txt.contains(sel.anchorNode)) {
+          this.caretAt(index, 'end');
+        }
       }
       this._focus = index;
       this._lastEdit = index;
@@ -711,7 +721,7 @@ export class NotePane {
     if (this._hlLayer) { this._hlLayer.remove(); this._hlLayer = null; }
   }
 
-  paintPartialHighlight() {
+  paintPartialHighlight() {
     const p = this._partial;
     if (!p) return;
     const layer = document.createElement('div');
