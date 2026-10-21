@@ -49,6 +49,7 @@ export class NotePane {
     dom.preview.addEventListener('focusout', (e) => this.onPreviewFocusOut(e));
     dom.preview.addEventListener('input', (e) => this.onPreviewInput(e));
     dom.preview.addEventListener('keydown', (e) => this.onPreviewKey(e));
+    dom.preview.addEventListener('contextmenu', (e) => this.onPreviewContextMenu(e));
     dom.preview.addEventListener('paste', (e) => this.onPreviewPaste(e));
     dom.preview.addEventListener('dragover', (e) => this.onPreviewDragOver(e));
     dom.preview.addEventListener('drop', (e) => this.onPreviewDrop(e));
@@ -576,6 +577,17 @@ export class NotePane {
 
   onBlockDblClick() { /* 单击已经能进编辑，双击不再需要 */ }
 
+  /** 右键正文里的某一段 → 块类型菜单（"/" 现在就是普通字符） */
+  onPreviewContextMenu(e) {
+    const blk = e.target.closest && e.target.closest('.blk');
+    if (!blk) return;
+    e.preventDefault();
+    const index = Number(blk.dataset.i);
+    this._focus = index;
+    this._lastEdit = index;
+    this.openSlashMenu(index, { left: e.clientX, bottom: e.clientY });
+  }
+
   onPreviewKey(e) {
     const txt = e.target.closest && e.target.closest('.blk-txt');
     const ta = e.target;
@@ -609,11 +621,6 @@ export class NotePane {
     if (e.key === 'Backspace' && this.caretAtBlockStart(txt)) {
       e.preventDefault();
       this.mergeUp();
-      return;
-    }
-    if (e.key === '/' && !txt.textContent.trim()) {
-      e.preventDefault();
-      this.openSlashMenu(index, txt.getBoundingClientRect());
       return;
     }
     // Tab / Shift+Tab：列表缩进、反缩进（Notion 的子项）

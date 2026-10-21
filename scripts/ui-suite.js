@@ -967,32 +967,41 @@
     return '自动转换 / 缩进 / 跨块 / 粘贴拆块 都正常';
   });
 
-  await run('输入 / 打开块类型菜单', async () => {
+  await run('右键正文弹出块类型菜单；"/" 只是普通字符', async () => {
     const note = ws.notesOf().find((n) => (n.content || '').split('\n\n').length >= 2);
     f.selectNote(note.id);
-    await wait(250);
-    f.pane.setMode('edit');
-    await wait(200);
+    await wait(260);
     f.pane.appendBlock();
-    await wait(280);
-    const ta = activeTA();
-    if (!ta) fail('空块没有编辑框');
-    ta.dispatchEvent(new KeyboardEvent('keydown', { key: '/', bubbles: true }));
-    await wait(220);
+    await wait(300);
+    const ed = activeEditor();
+    if (!ed) fail('空块没有光标');
+
+    // 打一个 "/"：应该是普通字符，不弹菜单
+    ed.innerHTML = '/';
+    ed.dispatchEvent(new Event('input', { bubbles: true }));
+    await wait(250);
+    if (document.querySelector('.blk-menu.slash')) fail('打 / 还是弹菜单了');
+    if (!ws.note(note.id).content.includes('/')) fail('/ 没有当普通字符写进去');
+
+    // 右键这一块 → 块类型菜单
+    const blk = ed.closest('.blk');
+    const r = blk.getBoundingClientRect();
+    blk.dispatchEvent(new MouseEvent('contextmenu', {
+      bubbles: true, cancelable: true,
+      clientX: Math.round(r.left + 12), clientY: Math.round(r.top + 10),
+    }));
+    await wait(260);
     const menu = document.querySelector('.blk-menu.slash');
-    if (!menu) fail('打 / 没弹出块类型菜单');
+    if (!menu) fail('右键没有弹出块类型菜单');
     const types = [...menu.querySelectorAll('button')].map((b) => b.dataset.type);
     for (const t of ['h1', 'h2', 'h3', 'bullet', 'num', 'task', 'quote', 'code', 'hr']) {
       if (!types.includes(t)) fail('缺少块类型 ' + t);
     }
-    // 选「标题 2」
     const h2 = [...menu.querySelectorAll('button')].find((b) => b.dataset.type === 'h2');
     h2.click();
     await wait(300);
-    if (!ws.note(note.id).content.includes('## ')) fail('没有转换成标题');
-    const preview = document.getElementById('preview');
-    if (!preview.querySelector('.blk-h2')) fail('预览里没出现标题块');
-    return '打 / 出类型菜单，选标题 2 生效';
+    if (!preview.querySelector('.blk-h2')) fail('转成标题后预览里没出现标题块');
+    return '右键出菜单，" / " 正常输入';
   });
 
   await run('在笔记里打字不会因为失焦丢内容', async () => {
