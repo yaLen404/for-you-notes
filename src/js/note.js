@@ -240,31 +240,45 @@ export class NotePane {
   }
 
   /** 删除"跨块的文字选区"覆盖的全部内容；返回 true 表示已经处理 */
-  deleteSelectedContent() {
+  deleteSelectedContent(opts = {}) {
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed || !sel.rangeCount) return false;
     const r = sel.getRangeAt(0);
-    const sBlk = this._blockOf(r.startContainer);
-    const eBlk = this._blockOf(r.endContainer);
-    if (!sBlk || !eBlk) return false;
-    const si = Number(sBlk.dataset.i);
-    const ei = Number(eBlk.dataset.i);
-    if (!Number.isFinite(si) || !Number.isFinite(ei) || si === ei) return false;   // 单块交给浏览器
-    const sTxt = sBlk.querySelector('.blk-txt');
-    const eTxt = eBlk.querySelector('.blk-txt');
-    if (!sTxt || !eTxt) return false;
-    const startOff = this._offIn(sTxt, r.startContainer, r.startOffset);
-    const endOff = this._offIn(eTxt, r.endContainer, r.endOffset);
-    const head = htmlToInline(sTxt.innerHTML).slice(0, startOff);
-    const tail = htmlToInline(eTxt.innerHTML).slice(endOff);
+    // 选区端点可能直接落在宿主 #preview 上（例如 Ctrl+A 全选），要兜底到首/末块
+    const host = this.dom.preview;
+    const resolve = (node, offset, isStart) => {
+      if (node === host) {
+        const idx = isStart ? 0 : this._blocks.length - 1;
+        const blk = this._blocks[idx];
+        return { index: idx, offset: isStart ? 0 : (blk ? blockLen(blk) : 0) };
+      }
+      const b = this._blockOf(node);
+      if (!b) return { index: isStart ? 0 : this._blocks.length - 1, offset: 0 };
+      const i = Number(b.dataset.i);
+      const txt = b.querySelector('.blk-txt');
+      return { index: i, offset: txt ? this._offIn(txt, node, offset) : 0 };
+    };
+    const a = resolve(r.startContainer, r.startOffset, true);
+    const b = resolve(r.endContainer, r.endOffset, false);
+    const si = a.index;
+    const ei = b.index;
+    if (!Number.isFinite(si) || !Number.isFinite(ei)) return false;
+    if (si === ei && !(r.startContainer === host)) return false;   // 单块内交给浏览器
+    if (opts.copy) {
+      const clip = window.foryou && window.foryou.clipboard;
+      if (clip) clip.write(String(sel.toString() || ''));
+    }
     const target = this._blocks[si];
     if (!target) return false;
-    target.inline = head + tail;
+    const headText = blockLen(target, a.offset);
+    const tailBlk = this._blocks[ei];
+    const tailText = tailBlk ? blockLen(tailBlk, b.offset, true) : '';
+    target.inline = headText + tailText;
     if (target.type === 'empty' && target.inline) target.type = 'p';
     this._blocks.splice(si + 1, Math.max(0, ei - si));
     this.writeBack();
     this.renderBlocks();
-    this.caretAtOffset(si, head.length);
+    this.caretAtOffset(si, headText.length);
     return true;
   }
 
@@ -1074,13 +1088,27 @@ export class NotePane {
       }
       return;
     }
-    if (!txt) return;
+    if (!txt) {
+      // 选区端点直接落在宿主上（Ctrl+A 全选 / 从块外拖进来）：这种也要能删、能剪
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'x' || e.key === 'X') && this.deleteSelectedContent({ copy: true })) {
+        e.preventDefault();
+        return;
+      }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && this.deleteSelectedContent()) {
+        e.preventDefault();
+        return;
+      }
+      return;
+    }
     const index = Number(txt.closest('.blk').dataset.i);
     // 回车 = 拆块；Shift+回车 = 同一块内软换行
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
       e.preventDefault();
       this.splitAtCaret();
       return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'x' || e.key === 'X')) {
+      if (this.deleteSelectedContent({ copy: true })) { e.preventDefault(); return; }
     }
     if ((e.key === 'Delete' || e.key === 'Backspace') && !e.shiftKey && this.deleteSelectedContent()) {
       e.preventDefault();
@@ -1443,6 +1471,13 @@ function blockTextOf(block) {
   if (block.type === 'empty') return '';
   if (block.type === 'code' || block.type === 'math' || block.type === 'table') return block.src || '';
   return block.inline || '';
+}
+
+/** 块纯文本：head=前 N 个字符，tail=true 时取第 N 个之后 */
+function blockLen(block, n, tail = false) {
+  const text = block ? blockTextOf(block) : '';
+  if (n == null) return tail ? text : text;
+  return tail ? text.slice(n) : text.slice(0, n);
 }
 
 function chip(text, open, unlink, title, extraClass = '', extraAttr = '') {
