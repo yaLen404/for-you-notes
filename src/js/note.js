@@ -69,6 +69,7 @@ export class NotePane {
 
     // 光标离开笔记（点画布、点别的笔记、切窗口）→ 把正在改的源码块提交掉
     document.addEventListener('pointerdown', () => this.scheduleLeave(), true);
+    document.addEventListener('selectionchange', () => this.paintCurrentBlock());
     document.addEventListener('focusin', (e) => {
       if (e.target && this.dom.root && !this.dom.root.contains(e.target)) this.scheduleLeave();
     });
@@ -166,7 +167,7 @@ export class NotePane {
     } else if (block.type === 'num') {
       marker = `<span class="blk-mark-num" contenteditable="false">${block._num || 1}.</span>`;
     }
-    const ce = editable ? ' contenteditable="true" spellcheck="false"' : '';
+    const ce = '';   // 单宿主：可编辑性在 #preview 上，块内不再嵌套 contenteditable
     return `<div class="${cls.join(' ')}" data-i="${i}" data-kind="inline"${pad}>`
       + marker
       + `<div class="blk-txt"${ce}>${blockToHtml(block, exists)}</div></div>`;
@@ -179,6 +180,39 @@ export class NotePane {
   editableEl(index) {
     const el = this.blkEl(index);
     return el ? el.querySelector('.blk-txt') : null;
+  }
+
+  /** 当前选区落在哪一块（单宿主模型下 e.target 永远是 #preview） */
+  currentBlockEl() {
+    const sel = window.getSelection();
+    if (!sel || !sel.anchorNode) return null;
+    const node = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
+    const blk = node && node.closest ? node.closest('.blk') : null;
+    if (!blk) return null;
+    return blk.querySelector('.blk-txt') || blk;
+  }
+
+  currentIndex() {
+    const el = this.currentBlockEl();
+    const blk = el && el.closest ? el.closest('.blk') : null;
+    if (blk) return Number(blk.dataset.i);
+    return this._focus == null ? 0 : this._focus;
+  }
+
+  /** 把光标放到第 index 块的 start/end */
+  caretAt(index, where = 'end') {
+    const txt = this.editableEl(index);
+    if (!txt) return false;
+    const range = document.createRange();
+    range.selectNodeContents(txt);
+    range.collapse(where === 'start');
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    if (document.activeElement !== this.dom.preview) this.dom.preview.focus();
+    this._focus = index;
+    this._lastEdit = index;
+    return true;
   }
 
   /** 所有块 → note.content。改一个字就同步一次，自动保存拿到的永远是最新文本。 */
@@ -259,8 +293,22 @@ export class NotePane {
   }
 
   // ---------------------------------------------------------------- 编辑交互
+  /** 光标落在哪一块，就给那一块加 .cur（替代原来的 :focus-within） */
+  paintCurrentBlock() {
+    const el = this.currentBlockEl();
+    const blk = el && el.closest ? el.closest('.blk') : null;
+    if (blk === this._curEl) return;
+    if (this._curEl) this._curEl.classList.remove('cur');
+    this._curEl = blk;
+    if (blk) {
+      blk.classList.add('cur');
+      this._focus = Number(blk.dataset.i);
+      this._lastEdit = this._focus;
+    }
+  }
+
   onPreviewFocusIn(e) {
-    const txt = e.target.closest && e.target.closest('.blk-txt');
+    const txt = (e.target.closest && e.target.closest('.blk-txt')) || this.currentBlockEl();
     if (!txt) return;
     const blk = txt.closest('.blk');
     if (!blk) return;
@@ -366,11 +414,24 @@ export class NotePane {
 
   /** 按回车：在光标处拆块 */
   splitAtCaret() {
-    const index = this._focus;
+    const index = this.currentIndex();
     if (index == null) return;
     const txt = this.editableEl(index);
     const sel = window.getSelection();
-    if (!txt || !sel || !sel.rangeCount) return;
+    if (!txt) return;
+    const cur0 = this._blocks[index];
+    if (!cur0) return;
+    // 光标不在这块文本里（比如刚点击过宿主）：当成"在块尾回车"
+    const r0 = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
+    if (!r0 || !txt.contains(r0.startContainer)) {
+      const t0 = ['h1', 'h2', 'h3'].includes(cur0.type) ? 'p' : cur0.type;
+      this._blocks.splice(index + 1, 0, { type: t0, inline: '', depth: cur0.depth || 0, done: false });
+      this.writeBack();
+      this.renderBlocks();
+      this.focusBlock(index + 1, 'start');
+      return;
+    }
+    if (!sel || !sel.rangeCount) return;
     const range = sel.getRangeAt(0);
     const before = document.createRange();
     before.selectNodeContents(txt);
@@ -397,7 +458,7 @@ export class NotePane {
 
   /** 块首退格：空块删掉，非空块并进上一块 */
   mergeUp() {
-    const index = this._focus;
+    const index = this.currentIndex();
     if (index == null || index <= 0) return;
     const txt = this.editableEl(index);
     if (!txt) return;
@@ -424,18 +485,9 @@ export class NotePane {
       this.openSource(index);
       return;
     }
-    const txt = this.editableEl(index);
-    if (!txt) return;
-    txt.focus();
-    const sel = window.getSelection();
-    const r = document.createRange();
-    r.selectNodeContents(txt);
-    if (where === 'start') r.collapse(true);
-    else r.collapse(false);
-    sel.removeAllRanges();
-    sel.addRange(r);
-    this._focus = index;
-    this._lastEdit = index;
+    // 单宿主：光标用 Range 落，焦点给 #preview
+    if (document.activeElement !== this.dom.preview) this.dom.preview.focus();
+    if (!this.caretAt(index, where)) return;
   }
 
   // ---------------------------------------------------------------- 块结构操作
@@ -606,8 +658,17 @@ export class NotePane {
     if (blk.dataset.kind === 'source') { this.openSource(index); return; }
     // 富文本块：把光标放进去（真实点击时浏览器已经放过，这里兜底）
     const txt = blk.querySelector('.blk-txt');
-    if (txt && document.activeElement !== txt) {
-      txt.focus();
+    if (txt) {
+      const range = document.caretRangeFromPoint
+        ? document.caretRangeFromPoint(e.clientX || 0, e.clientY || 0)
+        : null;
+      const sel = window.getSelection();
+      if (range && txt.contains(range.startContainer)) {
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } else if (!sel || !sel.rangeCount || !txt.contains(sel.anchorNode)) {
+        this.caretAt(index, 'end');
+      }
       this._focus = index;
       this._lastEdit = index;
     }
@@ -995,7 +1056,7 @@ export class NotePane {
   }
 
   onPreviewKey(e) {
-    const txt = e.target.closest && e.target.closest('.blk-txt');
+    const txt = (e.target.closest && e.target.closest('.blk-txt')) || this.currentBlockEl();
     const ta = e.target;
     if (ta.classList && ta.classList.contains('blk-editor')) {
       // 源码块（代码/公式/表格）里回车是换行；Ctrl+回车才在下面另起一块
@@ -1229,8 +1290,8 @@ export class NotePane {
     if (this._sourceIndex != null) {
       return this.dom.preview.querySelector(`.blk[data-i="${this._sourceIndex}"] .blk-editor`);
     }
-    if (this._focus == null) return null;
-    return this.editableEl(this._focus);
+    // 单宿主：输入焦点在 #preview 上，具体块由选区决定
+    return this.currentBlockEl() || (this._focus == null ? null : this.editableEl(this._focus));
   }
 
   // ---------------------------------------------------------------- 图片

@@ -494,7 +494,8 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
   border-radius: 4px;
 }
 /* 光标落点：正在写的那一块有淡淡底色，光标闪的时候也看得出位置 */
-/* 光标所在的那一块只给一点淡淡底色，不再画左边的强调色框线 */
+/* 光标所在的那一块只给一点淡淡底色（单宿主：用 .cur 代替 :focus-within） */
+.blk.cur .blk-txt,
 .blk:focus-within .blk-txt {
   background: rgba(255, 255, 255, .04);
 }
