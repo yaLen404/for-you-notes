@@ -741,6 +741,44 @@
     return items.join(' / ');
   });
 
+  await run('跨块选中后按 Delete，删掉的是全部选中内容且不会复活', async () => {
+    const note = ws.notesOf().find((n) => (n.content || '').split('\n\n').length >= 5);
+    f.selectNote(note.id);
+    await wait(360);
+    const txts = [...document.querySelectorAll('#preview .blk-txt')].filter((t) => (t.textContent || '').trim());
+    if (txts.length < 3) fail('块不够');
+    const before = { blocks: f.pane._blocks.length, len: ws.note(note.id).content.length };
+    const a = txts[0].firstChild || txts[0];
+    const c = txts[2].firstChild || txts[2];
+    const range = document.createRange();
+    range.setStart(a, 2);
+    range.setEnd(c, Math.max(1, (c.nodeValue || '').length - 2));
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    await wait(150);
+    const picked = sel.toString().length;
+    if (!picked) fail('没有选区');
+
+    txts[0].closest('.blk').dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
+    await wait(360);
+    const after = { blocks: f.pane._blocks.length, len: ws.note(note.id).content.length };
+    if (after.len >= before.len) fail('内容没有变少：' + before.len + ' → ' + after.len);
+    if (after.blocks !== before.blocks - 2) fail('块数不对：' + before.blocks + ' → ' + after.blocks);
+
+    // 切走再切回：删掉的内容不能复活
+    const other = ws.notesOf().find((n) => n.id !== note.id);
+    f.selectNote(other.id);
+    await wait(200);
+    f.selectNote(note.id);
+    await wait(300);
+    if (ws.note(note.id).content.length !== after.len) fail('删掉的内容又回来了');
+    // 收尾：撤销回去，别影响后面的用例
+    f.pane.undoNote();
+    await wait(200);
+    return '选中 ' + picked + ' 字 → 删除：' + before.len + ' → ' + after.len + ' 字，' + before.blocks + ' → ' + after.blocks + ' 块';
+  });
+
   await run('选完之后不会被"松手后的 click"清掉', async () => {
     const note = ws.notesOf().find((n) => (n.content || '').split('\n\n').length >= 4);
     f.selectNote(note.id);
@@ -1132,12 +1170,12 @@ await run('只选一块也能右键（选中不会被清掉）', async () => {
     }
     if (!content().includes('粘贴第三行')) fail('粘贴内容没进笔记');
 
-    // ⑤ 块尾按 ↓ → 光标移到下一块
-    const idx = f.pane._focus;
+    // ⑤ 块尾按 ↓ → 光标移到下一块（自己定位，别依赖前面步骤留下的状态）
+    const idx = 1;
     f.pane.focusBlock(idx, 'end');
     await wait(200);
     ed = activeEditor();
-    ed.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    if (ed) ed.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
     await wait(280);
     if (f.pane._focus === idx) fail('↓ 没有跨到下一块');
 

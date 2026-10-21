@@ -197,6 +197,77 @@ export class NotePane {
   }
 
   /** 把光标放到第 index 块的 start/end */
+  _blockOf(node) {
+    const el = node && (node.nodeType === 1 ? node : node.parentElement);
+    return el && el.closest ? el.closest('.blk') : null;
+  }
+
+  /** 某个 (node, offset) 在块文本里的字符偏移 */
+  _offIn(el, node, offset) {
+    if (!el) return 0;
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    try { r.setEnd(node, offset); } catch { return 0; }
+    return r.toString().length;
+  }
+
+  /** 把光标放到第 index 块的第 offset 个字符 */
+  caretAtOffset(index, offset) {
+    const txt = this.editableEl(index);
+    if (!txt) return false;
+    const walker = document.createTreeWalker(txt, NodeFilter.SHOW_TEXT);
+    let pos = 0;
+    let node = walker.nextNode();
+    let target = null;
+    let off = 0;
+    while (node) {
+      const len = node.nodeValue.length;
+      if (offset <= pos + len) { target = node; off = Math.max(0, offset - pos); break; }
+      pos += len;
+      node = walker.nextNode();
+    }
+    const range = document.createRange();
+    if (target) range.setStart(target, off);
+    else range.selectNodeContents(txt);
+    range.collapse(true);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    if (document.activeElement !== this.dom.preview) this.dom.preview.focus();
+    this._focus = index;
+    this._lastEdit = index;
+    return true;
+  }
+
+  /** 删除"跨块的文字选区"覆盖的全部内容；返回 true 表示已经处理 */
+  deleteSelectedContent() {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return false;
+    const r = sel.getRangeAt(0);
+    const sBlk = this._blockOf(r.startContainer);
+    const eBlk = this._blockOf(r.endContainer);
+    if (!sBlk || !eBlk) return false;
+    const si = Number(sBlk.dataset.i);
+    const ei = Number(eBlk.dataset.i);
+    if (!Number.isFinite(si) || !Number.isFinite(ei) || si === ei) return false;   // 单块交给浏览器
+    const sTxt = sBlk.querySelector('.blk-txt');
+    const eTxt = eBlk.querySelector('.blk-txt');
+    if (!sTxt || !eTxt) return false;
+    const startOff = this._offIn(sTxt, r.startContainer, r.startOffset);
+    const endOff = this._offIn(eTxt, r.endContainer, r.endOffset);
+    const head = htmlToInline(sTxt.innerHTML).slice(0, startOff);
+    const tail = htmlToInline(eTxt.innerHTML).slice(endOff);
+    const target = this._blocks[si];
+    if (!target) return false;
+    target.inline = head + tail;
+    if (target.type === 'empty' && target.inline) target.type = 'p';
+    this._blocks.splice(si + 1, Math.max(0, ei - si));
+    this.writeBack();
+    this.renderBlocks();
+    this.caretAtOffset(si, head.length);
+    return true;
+  }
+
   caretAt(index, where = 'end') {
     const txt = this.editableEl(index);
     if (!txt) return false;
@@ -1009,6 +1080,10 @@ export class NotePane {
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
       e.preventDefault();
       this.splitAtCaret();
+      return;
+    }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && !e.shiftKey && this.deleteSelectedContent()) {
+      e.preventDefault();
       return;
     }
     if ((e.key === 'Delete' || e.key === 'Backspace') && this._sel.size > 1) {
