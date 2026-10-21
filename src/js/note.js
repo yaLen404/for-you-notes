@@ -615,32 +615,55 @@ export class NotePane {
 
   onBlockDblClick() { /* 单击已经能进编辑，双击不再需要 */ }
 
-  /** 按住鼠标在块之间拖：跨块选择（块内的原生文字选择出不了这一块） */
+  /** 按住鼠标拖：起点落在哪个字就从哪个字开始；跨块时"起点块选到字尾 + 后面整块高亮"
+   *  （Chromium 不允许一次文字选区横跨两个 contenteditable，所以这样拼） */
   onPreviewPointerDown(e) {
     if (e.button !== 0 || e.shiftKey || e.ctrlKey || e.metaKey) return;
     const blk = e.target.closest && e.target.closest('.blk');
     this._downIndex = blk ? Number(blk.dataset.i) : null;
     this._dragSel = false;
     this._justDragged = false;
+    this._anchorRange = (document.caretRangeFromPoint && this._downIndex != null)
+      ? document.caretRangeFromPoint(e.clientX, e.clientY)
+      : null;
   }
 
   onPreviewPointerMove(e) {
-    if (this._downIndex == null) return;
+    if (this._downIndex == null || !this._anchorRange) return;
     const el = document.elementFromPoint(e.clientX, e.clientY);
     const blk = el && el.closest && el.closest('.blk');
     if (!blk) return;
     const idx = Number(blk.dataset.i);
-    if (idx === this._downIndex && !this._dragSel) return;
-    const a = Math.min(this._downIndex, idx);
-    const b = Math.max(this._downIndex, idx);
-    this._dragSel = true;
+    if (idx === this._downIndex && !this._dragSel) return;   // 同一块内交给浏览器
+    const startBlk = this._blocks[this._downIndex];
+    const txt = this.editableEl(this._downIndex);
+    if (!startBlk || !txt) return;
+
+    const down = idx > this._downIndex;
+    try {
+      const range = document.createRange();
+      const anchor = this._anchorRange;
+      if (down) {
+        range.setStart(anchor.startContainer, anchor.startOffset);
+        range.setEnd(txt, txt.childNodes.length);      // 起点块里：从那个字选到块尾
+      } else {
+        range.setStart(txt, 0);
+        range.setEnd(anchor.startContainer, anchor.startOffset);
+      }
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch { /* 忽略 */ }
+
+    // 其余块用块级高亮补齐；浏览器不给跨块文字选区时，把起点块也算进来
+    const gotText = Boolean(window.getSelection && String(window.getSelection() || '').length);
+    const lo = down ? (gotText ? this._downIndex + 1 : this._downIndex) : idx;
+    const hi = down ? idx : (gotText ? this._downIndex - 1 : this._downIndex);
     this._sel = new Set();
-    for (let k = a; k <= b; k += 1) this._sel.add(k);
+    for (let k = lo; k <= hi; k += 1) this._sel.add(k);
     this._lastEdit = idx;
+    this._dragSel = true;
     this.repaintSelection();
-    // 别让块内那点原生文字选区抢戏
-    const sel = window.getSelection();
-    if (sel && sel.removeAllRanges) sel.removeAllRanges();
   }
 
   onPreviewPointerUp() {
@@ -678,6 +701,14 @@ export class NotePane {
 
   /** 选中块的文本（按顺序拼） */
   selectedText() {
+    const picked = window.getSelection ? String(window.getSelection() || '') : '';
+    const parts = this.selectedIndexes()
+      .map((i) => this._blocks[i] && blockTextOf(this._blocks[i]))
+      .filter(Boolean);
+    if (picked) {
+      if (!parts.length) return picked;
+      const up = this._sel.size && Math.min(...this._sel) > (this._lastEdit || 0);
+    }
     return this.selectedIndexes()
       .map((i) => this._blocks[i] && blockTextOf(this._blocks[i]))
       .filter(Boolean)
