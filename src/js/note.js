@@ -42,7 +42,10 @@ export class NotePane {
 
     // 块区：编辑相关的输入事件都委托到 #preview（块元素会被反复重建）
     this._closeMenuOnOutside = (ev) => {
-      if (this._menuEl && !this._menuEl.contains(ev.target)) this.closeBlockMenu();
+      // 子菜单是独立的 DOM，点在它里面也算"菜单内"，否则按下就被关掉、click 永远到不了
+      const inMenu = this._menuEl && this._menuEl.contains(ev.target);
+      const inSub = this._subEl && this._subEl.contains(ev.target);
+      if (!inMenu && !inSub) this.closeBlockMenu();
     };
     dom.preview.addEventListener('click', (e) => this.onBlockClick(e));
     dom.preview.addEventListener('focusin', (e) => this.onPreviewFocusIn(e));

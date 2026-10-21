@@ -1031,7 +1031,7 @@
       if (!types.includes(t)) fail('子菜单缺少块类型 ' + t);
     }
     const h2 = [...sub.querySelectorAll('button')].find((b) => b.dataset.type === 'h2');
-    h2.click();
+    realClick(h2);   // 走真实指针路径：pointerdown 会先触发"点外面"逻辑
     await wait(320);
     if (!preview.querySelector('.blk-h2')) fail('转成标题 2 没生效');
     if (document.querySelector('.blk-menu')) fail('选完菜单没关掉');
