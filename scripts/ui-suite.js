@@ -738,6 +738,47 @@
     return items.join(' / ');
   });
 
+  await run('Shift 点块可以多选，右键整体删除', async () => {
+    const note = ws.notesOf().find((n) => (n.content || '').split('\n\n').length >= 4);
+    f.selectNote(note.id);
+    await wait(320);
+    const blockOf = (i) => document.querySelector('#preview .blk[data-i="' + i + '"]');
+    const click = (i, mods = {}) => {
+      const blk = blockOf(i);
+      const r = blk.getBoundingClientRect();
+      blk.dispatchEvent(new MouseEvent('click', Object.assign({
+        bubbles: true, cancelable: true,
+        clientX: Math.round(r.left + 12), clientY: Math.round(r.top + 8),
+      }, mods)));
+    };
+    click(1);
+    await wait(200);
+    click(3, { shiftKey: true });
+    await wait(260);
+    const sel = [...f.pane._sel].sort((a, b) => a - b);
+    if (sel.join(',') !== '1,2,3') fail('Shift 选区间不对：' + sel.join(','));
+    if (document.querySelectorAll('#preview .blk.sel').length !== 3) fail('选中高亮数量不对');
+
+    const before = f.pane._blocks.length;
+    const blk = blockOf(2);
+    const r = blk.getBoundingClientRect();
+    blk.dispatchEvent(new MouseEvent('contextmenu', {
+      bubbles: true, cancelable: true,
+      clientX: Math.round(r.left + 10), clientY: Math.round(r.top + 8),
+    }));
+    await wait(260);
+    const menu = document.querySelector('.blk-menu');
+    if (!menu) fail('多选时右键没有菜单');
+    const del = [...menu.querySelectorAll('button')].find((b) => b.dataset.act === 'del');
+    if (!del) fail('多选菜单里没有删除');
+    realClick(del);
+    await wait(340);
+    if (f.pane._blocks.length !== before - 3) {
+      fail('删除块数不对：' + before + ' → ' + f.pane._blocks.length);
+    }
+    return '选中 3 块 → 删除，' + before + ' → ' + f.pane._blocks.length;
+  });
+
   await run('点正文空白处，光标落到最后一块', async () => {
     const note = ws.notesOf().find((n) => (n.content || '').length > 20);
     f.selectNote(note.id);

@@ -643,3 +643,7 @@ html, body, #app, #canvas, #preview, .canvas, .preview, .pane {
 .blk-menu .has-sub { display: flex; align-items: center; }
 .blk-menu .sub-arrow { margin-left: auto; padding-left: 10px; color: var(--faint); font-size: 11px; }
 .blk-menu.sub { z-index: 130; }
+
+/* 多选中的块 */
+.blk.sel { background: color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 4px; }
+.blk.sel .blk-txt { background: transparent; }

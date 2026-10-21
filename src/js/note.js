@@ -26,6 +26,7 @@ export class NotePane {
 
     this._blocks = [];        // parseBlocks() 的结果
     this._focus = null;       // 光标所在的富文本块下标
+    this._sel = new Set();    // 多选的块下标（Shift / Ctrl 点出来）
     this._sourceIndex = null; // 正在改源码的块下标（代码/公式/表格）
     this._lastEdit = 0;       // 上次编辑过的块下标
 
@@ -147,6 +148,7 @@ export class NotePane {
     const cls = ['blk', 'blk-' + block.type];
     // 空笔记（只有一块空的）才给占位提示，正文里的空块保持干净
     if (block.type === 'empty' && this._blocks.length === 1) cls.push('is-only');
+    if (this._sel && this._sel.has(i)) cls.push('sel');
     const pad = block.depth ? ` style="margin-left:${block.depth * 20}px"` : '';
     if (SOURCE_BLOCKS.includes(block.type)) {
       return `<div class="${cls.join(' ')}" data-i="${i}" data-kind="source"${pad}>`
@@ -557,6 +559,28 @@ export class NotePane {
 
   // ---------------------------------------------------------------- 点击 / 键盘
   onBlockClick(e) {
+    // Shift / Ctrl + 点击：块级多选（不进编辑）
+    const hitBlk = e.target.closest && e.target.closest('.blk');
+    if (hitBlk && (e.shiftKey || e.ctrlKey || e.metaKey)) {
+      const idx = Number(hitBlk.dataset.i);
+      if (e.shiftKey && this._lastEdit != null && this._lastEdit !== idx) {
+        const a = Math.min(this._lastEdit, idx);
+        const b = Math.max(this._lastEdit, idx);
+        this._sel = new Set();
+        for (let k = a; k <= b; k += 1) this._sel.add(k);
+      } else if (e.ctrlKey || e.metaKey) {
+        if (this._sel.has(idx)) this._sel.delete(idx);
+        else this._sel.add(idx);
+        this._lastEdit = idx;
+      } else {
+        this._sel = new Set([idx]);
+        this._lastEdit = idx;
+      }
+      e.preventDefault();
+      this.repaintSelection();
+      return;
+    }
+    if (this._sel.size) { this._sel.clear(); this.repaintSelection(); }
     const check = e.target.closest('.blk-check');
     if (check) { this.toggleTask(Number(check.dataset.i)); return; }
     if (e.target.closest('textarea')) return;
@@ -584,6 +608,37 @@ export class NotePane {
 
   onBlockDblClick() { /* 单击已经能进编辑，双击不再需要 */ }
 
+  repaintSelection() {
+    for (const el of this.dom.preview.querySelectorAll('.blk')) {
+      el.classList.toggle('sel', this._sel.has(Number(el.dataset.i)));
+    }
+  }
+
+  /** 选中块（>1 时才算多选）：返回下标数组（从大到小，方便删） */
+  selectedIndexes() {
+    return [...this._sel].sort((a, b) => a - b);
+  }
+
+  /** 删掉选中的多块 */
+  deleteSelectedBlocks() {
+    if (this._sel.size < 2) return false;
+    const idxs = this.selectedIndexes().reverse();
+    for (const i of idxs) this._blocks.splice(i, 1);
+    if (!this._blocks.length) this._blocks.push({ type: 'empty', inline: '' });
+    this._sel.clear();
+    this.writeBack();
+    this.renderBlocks();
+    return true;
+  }
+
+  /** 选中块的文本（按顺序拼） */
+  selectedText() {
+    return this.selectedIndexes()
+      .map((i) => this._blocks[i] && blockTextOf(this._blocks[i]))
+      .filter(Boolean)
+      .join('\n\n');
+  }
+
   /** 右键正文里的某一段 → 文本编辑菜单（里面再嵌「转为」块类型子菜单） */
   onPreviewContextMenu(e) {
     const blk = e.target.closest && e.target.closest('.blk');
@@ -598,6 +653,34 @@ export class NotePane {
   /** 右键菜单：剪切 / 复制 / 粘贴 / 全选 + 转为 ▸ */
   openBlockContextMenu(index, x, y) {
     this.closeBlockMenu();
+    const multi = this._sel.size > 1;
+    if (multi) {
+      const m2 = document.createElement('div');
+      m2.className = 'blk-menu';
+      m2.innerHTML = [
+        '<button data-act="copy">复制选中 ' + this._sel.size + ' 块</button>',
+        '<button data-act="cut">剪切选中</button>',
+        '<button data-act="del" class="danger">删除选中</button>',
+      ].join('');
+      m2.style.left = Math.max(6, Math.min(window.innerWidth - 180, x)) + 'px';
+      m2.style.top = Math.max(6, Math.min(window.innerHeight - 140, y)) + 'px';
+      document.body.appendChild(m2);
+      this._menuEl = m2;
+      m2.addEventListener('mousedown', (ev) => ev.preventDefault());
+      m2.addEventListener('click', (ev) => {
+        const btn = ev.target.closest('button');
+        if (!btn) return;
+        const act = btn.dataset.act;
+        this.closeBlockMenu();
+        if (act === 'copy' || act === 'cut') {
+          const clip = window.foryou && window.foryou.clipboard;
+          if (clip) clip.write(this.selectedText());
+        }
+        if (act === 'del' || act === 'cut') this.deleteSelectedBlocks();
+      });
+      setTimeout(() => window.addEventListener('pointerdown', this._closeMenuOnOutside, true), 0);
+      return;
+    }
     const menu = document.createElement('div');
     menu.className = 'blk-menu';
     menu.innerHTML = [
@@ -739,6 +822,11 @@ export class NotePane {
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
       e.preventDefault();
       this.splitAtCaret();
+      return;
+    }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && this._sel.size > 1) {
+      e.preventDefault();
+      this.deleteSelectedBlocks();
       return;
     }
     if (e.key === 'Backspace' && this.caretAtBlockStart(txt)) {
@@ -1086,6 +1174,13 @@ export class NotePane {
     this.dom.title.focus();
     this.dom.title.select();
   }
+}
+
+function blockTextOf(block) {
+  if (!block) return '';
+  if (block.type === 'empty') return '';
+  if (block.type === 'code' || block.type === 'math' || block.type === 'table') return block.src || '';
+  return block.inline || '';
 }
 
 function chip(text, open, unlink, title, extraClass = '', extraAttr = '') {
