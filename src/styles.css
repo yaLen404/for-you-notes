@@ -644,10 +644,9 @@ html, body, #app, #canvas, #preview, .canvas, .preview, .pane {
 .blk-menu .sub-arrow { margin-left: auto; padding-left: 10px; color: var(--faint); font-size: 11px; }
 .blk-menu.sub { z-index: 130; }
 
-/* 多选中的块 */
-.blk.sel { background: color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 4px; }
+/* 多选中的块：中性灰，不用紫色 */
+.blk.sel { background: rgba(255, 255, 255, .07); border-radius: 4px; }
 .blk.sel .blk-txt { background: transparent; }
 
-/* 拖选时"精确到字"的高亮（块级高亮只能整块，端点这段用浮层补） */
-.drag-layer { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
-.drag-hl { position: absolute; background: color-mix(in srgb, var(--accent) 34%, transparent); border-radius: 2px; }
+/* 拖选端点的浮层已取消（那块紫色覆盖不要了） */
+.drag-layer { display: none; }
