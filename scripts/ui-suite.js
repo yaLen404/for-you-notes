@@ -738,6 +738,29 @@
     return items.join(' / ');
   });
 
+  await run('按住鼠标跨块拖拽可以选中多块', async () => {
+    const note = ws.notesOf().find((n) => (n.content || '').split('\n\n').length >= 5);
+    f.selectNote(note.id);
+    await wait(320);
+    const blkOf = (i) => document.querySelector('#preview .blk[data-i="' + i + '"]');
+    const center = (i) => {
+      const r = blkOf(i).getBoundingClientRect();
+      return [Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2)];
+    };
+    const [x1, y1] = center(1);
+    blkOf(1).dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x1, clientY: y1, pointerId: 1, button: 0 }));
+    await wait(80);
+    const [x4, y4] = center(4);
+    document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: x4, clientY: y4, pointerId: 1 }));
+    await wait(200);
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x4, clientY: y4, pointerId: 1 }));
+    await wait(180);
+    const sel = [...f.pane._sel].sort((a, b) => a - b);
+    if (sel.join(',') !== '1,2,3,4') fail('跨块拖拽没选中 1-4：' + sel.join(','));
+    if (document.querySelectorAll('#preview .blk.sel').length !== 4) fail('高亮数量不对');
+    return '从第 2 块拖到第 5 块 → 选中 4 块';
+  });
+
   await run('只选一块也能右键（选中不会被清掉）', async () => {
     const note = ws.notesOf().find((n) => (n.content || '').split('\n\n').length >= 4);
     f.selectNote(note.id);

@@ -48,6 +48,9 @@ export class NotePane {
       const inSub = this._subEl && this._subEl.contains(ev.target);
       if (!inMenu && !inSub) this.closeBlockMenu();
     };
+    dom.preview.addEventListener('pointerdown', (e) => this.onPreviewPointerDown(e));
+    document.addEventListener('pointermove', (e) => this.onPreviewPointerMove(e));
+    document.addEventListener('pointerup', () => this.onPreviewPointerUp());
     dom.preview.addEventListener('click', (e) => this.onBlockClick(e));
     dom.preview.addEventListener('focusin', (e) => this.onPreviewFocusIn(e));
     dom.preview.addEventListener('focusout', (e) => this.onPreviewFocusOut(e));
@@ -610,6 +613,39 @@ export class NotePane {
   }
 
   onBlockDblClick() { /* 单击已经能进编辑，双击不再需要 */ }
+
+  /** 按住鼠标在块之间拖：跨块选择（块内的原生文字选择出不了这一块） */
+  onPreviewPointerDown(e) {
+    if (e.button !== 0 || e.shiftKey || e.ctrlKey || e.metaKey) return;
+    const blk = e.target.closest && e.target.closest('.blk');
+    this._downIndex = blk ? Number(blk.dataset.i) : null;
+    this._dragSel = false;
+  }
+
+  onPreviewPointerMove(e) {
+    if (this._downIndex == null) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const blk = el && el.closest && el.closest('.blk');
+    if (!blk) return;
+    const idx = Number(blk.dataset.i);
+    if (idx === this._downIndex && !this._dragSel) return;
+    const a = Math.min(this._downIndex, idx);
+    const b = Math.max(this._downIndex, idx);
+    this._dragSel = true;
+    this._sel = new Set();
+    for (let k = a; k <= b; k += 1) this._sel.add(k);
+    this._lastEdit = idx;
+    this.repaintSelection();
+    // 别让块内那点原生文字选区抢戏
+    const sel = window.getSelection();
+    if (sel && sel.removeAllRanges) sel.removeAllRanges();
+  }
+
+  onPreviewPointerUp() {
+    if (this._dragSel) this.repaintSelection();
+    this._downIndex = null;
+    this._dragSel = false;
+  }
 
   repaintSelection() {
     for (const el of this.dom.preview.querySelectorAll('.blk')) {
