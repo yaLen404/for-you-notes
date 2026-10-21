@@ -685,6 +685,7 @@ export class NotePane {
     this._lastEdit = idx;
     this._dragSel = true;
     this.repaintSelection();
+    this.paintPartialHighlight();
   }
 
   onPreviewPointerUp() {
@@ -758,12 +759,21 @@ export class NotePane {
       }
     };
     const down = p.toIndex >= p.fromIndex;
-    if (down) {
-      put(this._rangeInBlock(p.fromIndex, p.fromOffset, (blockTextOf(this._blocks[p.fromIndex]) || '').length));
-      put(this._rangeInBlock(p.toIndex, 0, p.toOffset));
-    } else {
-      put(this._rangeInBlock(p.toIndex, p.toOffset, (blockTextOf(this._blocks[p.toIndex]) || '').length));
-      put(this._rangeInBlock(p.fromIndex, 0, p.fromOffset));
+    const lo = down ? p.fromIndex : p.toIndex;
+    const hi = down ? p.toIndex : p.fromIndex;
+    const lenOf = (i) => (blockTextOf(this._blocks[i]) || '').length;
+    // 逐块画：起点块从那个字、终点块到那个字、中间整块 —— 连起来就是"完整的选中内容"
+    for (let i = lo; i <= hi; i += 1) {
+      let from = 0;
+      let to = lenOf(i);
+      if (down) {
+        if (i === p.fromIndex) from = p.fromOffset;
+        if (i === p.toIndex) to = p.toOffset;
+      } else {
+        if (i === p.toIndex) from = p.toOffset;
+        if (i === p.fromIndex) to = p.fromOffset;
+      }
+      put(this._rangeInBlock(i, from, to));
     }
   }
 
