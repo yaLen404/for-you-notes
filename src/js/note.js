@@ -48,9 +48,6 @@ export class NotePane {
       const inSub = this._subEl && this._subEl.contains(ev.target);
       if (!inMenu && !inSub) this.closeBlockMenu();
     };
-    dom.preview.addEventListener('pointerdown', (e) => this.onPreviewPointerDown(e));
-    document.addEventListener('pointermove', (e) => this.onPreviewPointerMove(e));
-    document.addEventListener('pointerup', () => this.onPreviewPointerUp());
     dom.preview.addEventListener('click', (e) => this.onBlockClick(e));
     dom.preview.addEventListener('focusin', (e) => this.onPreviewFocusIn(e));
     dom.preview.addEventListener('focusout', (e) => this.onPreviewFocusOut(e));
@@ -676,89 +673,6 @@ export class NotePane {
 
   onBlockDblClick() { /* 单击已经能进编辑，双击不再需要 */ }
 
-  /** 按住鼠标拖：起点落在哪个字就从哪个字开始；跨块时"起点块选到字尾 + 后面整块高亮"
-   *  （Chromium 不允许一次文字选区横跨两个 contenteditable，所以这样拼） */
-  onPreviewPointerDown(e) {
-    if (e.button !== 0 || e.shiftKey || e.ctrlKey || e.metaKey) return;
-    const blk = e.target.closest && e.target.closest('.blk');
-    this._downIndex = blk ? Number(blk.dataset.i) : null;
-    this._dragSel = false;
-    this._justDragged = false;
-    this._anchorRange = (document.caretRangeFromPoint && this._downIndex != null)
-      ? document.caretRangeFromPoint(e.clientX, e.clientY)
-      : null;
-    this._anchorOffset = this._anchorRange ? this._offsetInBlock(this._anchorRange, this._downIndex) : 0;
-    this._partial = null;
-    this.clearPartialHighlight();
-  }
-
-  /** 让整个预览临时变成一个可编辑宿主（跨块时蓝选区才能连起来） */
-  enterSpanMode() {
-    if (this._spanMode) return;
-    const list = this.dom.preview.querySelectorAll('.blk-txt');
-    list.forEach((el) => {
-      el.dataset.ce = el.getAttribute('contenteditable') || 'true';
-      el.setAttribute('contenteditable', 'false');
-    });
-    this.dom.preview.setAttribute('contenteditable', 'true');
-    this._spanMode = true;
-  }
-
-  exitSpanMode() {
-    if (!this._spanMode) return;
-    this.dom.preview.removeAttribute('contenteditable');
-    this.dom.preview.querySelectorAll('.blk-txt').forEach((el) => {
-      el.setAttribute('contenteditable', el.dataset.ce || 'true');
-      delete el.dataset.ce;
-    });
-    this._spanMode = false;
-  }
-
-  onPreviewPointerMove(e) {
-    if (this._downIndex == null || !this._anchorRange) return;
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    const blk = el && el.closest && el.closest('.blk');
-    if (!blk) return;
-    const idx = Number(blk.dataset.i);
-    if (idx === this._downIndex && !this._dragSel) return;   // 同一块内交给浏览器
-    // 光标当前落在这个字符位置（跨块时用来算"精确到字"的终点）
-    const cur = document.caretRangeFromPoint
-      ? document.caretRangeFromPoint(e.clientX, e.clientY)
-      : null;
-    const startBlk = this._blocks[this._downIndex];
-    const txt = this.editableEl(this._downIndex);
-    if (!startBlk) return;   // 起点块没了就放弃（源码块没有 .blk-txt 也照常走块级选择）
-
-    const down = idx > this._downIndex;
-    // 端点字符偏移（精确复制用）
-    const endOffset = this._offsetInBlock(cur, idx);
-    this._partial = {
-      fromIndex: this._downIndex, fromOffset: this._anchorOffset,
-      toIndex: idx, toOffset: endOffset,
-    };
-
-    // 其余块用块级高亮补齐；浏览器不给跨块文字选区时，把起点块也算进来
-    const gotText = Boolean(window.getSelection && String(window.getSelection() || '').length);
-    const lo = down ? (gotText ? this._downIndex + 1 : this._downIndex) : idx;
-    const hi = down ? idx : (gotText ? this._downIndex - 1 : this._downIndex);
-    this._sel = new Set();
-    for (let k = lo; k <= hi; k += 1) this._sel.add(k);
-    this._lastEdit = idx;
-    this._dragSel = true;
-    this.repaintSelection();
-    this.paintPartialHighlight();
-  }
-
-  onPreviewPointerUp() {
-    if (this._dragSel) {
-      this.repaintSelection();
-      // 抬手后浏览器还会补一个 click，别让它把刚选中的块清掉
-      this._justDragged = true;
-    }
-    this._downIndex = null;
-    this._dragSel = false;
-  }
-
   repaintSelection() {
     for (const el of this.dom.preview.querySelectorAll('.blk')) {
       el.classList.toggle('sel', this._sel.has(Number(el.dataset.i)));
@@ -797,8 +711,7 @@ export class NotePane {
     if (this._hlLayer) { this._hlLayer.remove(); this._hlLayer = null; }
   }
 
-  paintPartialHighlight() {
-    this.clearPartialHighlight();
+  paintPartialHighlight() {
     const p = this._partial;
     if (!p) return;
     const layer = document.createElement('div');
