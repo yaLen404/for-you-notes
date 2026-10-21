@@ -650,6 +650,9 @@ export class NotePane {
     const tag = e.target.closest('.tag');
     if (tag && !editingThis) { if (this.hooks.onTag) this.hooks.onTag(tag.dataset.tag); return; }
     if (!blk) {
+      // 刚拖选完、松手后的 click 落在空白处 → 不要动选区
+      const selNow = window.getSelection();
+      if (selNow && !selNow.isCollapsed && selNow.toString()) return;
       // 点到正文里的空白（比如最后一块下面）→ 光标落到最后一块
       if (this._blocks.length) this.focusBlock(this._blocks.length - 1, 'end');
       return;

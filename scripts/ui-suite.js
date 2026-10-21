@@ -741,6 +741,41 @@
     return items.join(' / ');
   });
 
+  await run('选完之后不会被"松手后的 click"清掉', async () => {
+    const note = ws.notesOf().find((n) => (n.content || '').split('\n\n').length >= 4);
+    f.selectNote(note.id);
+    await wait(320);
+    const txts = [...document.querySelectorAll('#preview .blk-txt')].filter((t) => (t.textContent || '').trim());
+    const a = txts[0].firstChild || txts[0];
+    const c = txts[2].firstChild || txts[2];
+    const range = document.createRange();
+    range.setStart(a, 3);
+    range.setEnd(c, 5);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    const before = sel.toString().length;
+    if (!before) fail('没有选区');
+
+    // 1) 松手后的 click 落在某一块上
+    const blk = txts[0].closest('.blk');
+    const r = blk.getBoundingClientRect();
+    blk.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: Math.round(r.left + 16), clientY: Math.round(r.top + 8) }));
+
+    // 2) 松手后的 click 落在正文空白处（#preview 本身）
+    const prev = document.getElementById('preview');
+    const pr = prev.getBoundingClientRect();
+    prev.dispatchEvent(new MouseEvent('click', {
+      bubbles: true,
+      clientX: Math.round(pr.left + pr.width / 2),
+      clientY: Math.round(pr.bottom - 6),
+    }));
+    await wait(260);
+    const after = window.getSelection().toString().length;
+    if (after !== before) fail('选区被清掉了：' + before + ' → ' + after);
+    return '两种落点都不影响：仍选中 ' + after + ' 字';
+  });
+
   await run('跨块拖拽 = 原生选区，复制拿到完整内容', async () => {
     const note = ws.notesOf().find((n) => (n.content || '').split('\n\n').length >= 4);
     f.selectNote(note.id);
