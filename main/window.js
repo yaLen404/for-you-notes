@@ -30,6 +30,8 @@ function createWindow(options = {}) {
     skipTaskbar: !show,        // 自检/截图用的隐藏窗口不进任务栏、不占屏幕
     backgroundColor: '#161616',
     title: 'For You Notes',
+    // 任务栏 / 标题栏都用项目自带的图标，跟桌面快捷方式保持一致
+    icon: path.join(__dirname, '..', 'assets', 'foryounotes.ico'),
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload.js'),
       contextIsolation: true,
