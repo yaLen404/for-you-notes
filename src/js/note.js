@@ -563,7 +563,11 @@ export class NotePane {
     if (link && !editingThis) { if (this.hooks.onLink) this.hooks.onLink(link.dataset.title); return; }
     const tag = e.target.closest('.tag');
     if (tag && !editingThis) { if (this.hooks.onTag) this.hooks.onTag(tag.dataset.tag); return; }
-    if (!blk) return;
+    if (!blk) {
+      // 点到正文里的空白（比如最后一块下面）→ 光标落到最后一块
+      if (this._blocks.length) this.focusBlock(this._blocks.length - 1, 'end');
+      return;
+    }
     const index = Number(blk.dataset.i);
     if (blk.dataset.kind === 'source') { this.openSource(index); return; }
     // 富文本块：把光标放进去（真实点击时浏览器已经放过，这里兜底）

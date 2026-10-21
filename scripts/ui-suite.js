@@ -738,6 +738,28 @@
     return items.join(' / ');
   });
 
+  await run('点正文空白处，光标落到最后一块', async () => {
+    const note = ws.notesOf().find((n) => (n.content || '').length > 20);
+    f.selectNote(note.id);
+    await wait(300);
+    const prev = document.getElementById('preview');
+    const r = prev.getBoundingClientRect();
+    const lastIndex = f.pane._blocks.length - 1;
+    const x = Math.round(r.left + r.width / 2);
+    const y = Math.round(r.bottom - 8);
+    const target = document.elementFromPoint(x, y) || prev;
+    pointer(target, 'pointerdown', x, y);
+    pointer(window, 'pointerup', x, y);
+    target.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: x, clientY: y }));
+    await wait(340);
+    if (f.pane._focus !== lastIndex) fail('没落到最后一块：' + f.pane._focus + ' / 最后 ' + lastIndex);
+    const ae = document.activeElement;
+    if (!ae || !ae.closest || !ae.closest('.blk[data-i="' + lastIndex + '"]')) {
+      fail('光标不在最后一块里');
+    }
+    return '空白处点击 → 最后一块（第 ' + (lastIndex + 1) + ' 块）';
+  });
+
   await run('画布按钮：临时让画布占满，再点还原', async () => {
     const body = document.getElementById('body');
     const right = document.getElementById('rightPane');
