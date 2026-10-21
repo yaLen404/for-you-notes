@@ -647,3 +647,7 @@ html, body, #app, #canvas, #preview, .canvas, .preview, .pane {
 /* 多选中的块 */
 .blk.sel { background: color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 4px; }
 .blk.sel .blk-txt { background: transparent; }
+
+/* 拖选时"精确到字"的高亮（块级高亮只能整块，端点这段用浮层补） */
+.drag-layer { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.drag-hl { position: absolute; background: color-mix(in srgb, var(--accent) 34%, transparent); border-radius: 2px; }

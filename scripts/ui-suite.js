@@ -738,6 +738,34 @@
     return items.join(' / ');
   });
 
+  await run('跨块拖选可以精确到字（复制从那个字开始）', async () => {
+    const note = ws.notesOf().find((n) => (n.content || '').split('\n\n').length >= 5);
+    f.selectNote(note.id);
+    await wait(320);
+    const blkOf = (i) => document.querySelector('#preview .blk[data-i="' + i + '"]');
+    const point = (i, frac) => {
+      const t = blkOf(i).querySelector('.blk-txt') || blkOf(i);
+      const r = t.getBoundingClientRect();
+      return [Math.round(r.left + r.width * frac), Math.round(r.top + r.height / 2)];
+    };
+    const firstText = (blkOf(1).textContent || '').trim();
+    const [x1, y1] = point(1, 0.45);
+    blkOf(1).dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x1, clientY: y1, pointerId: 1, button: 0 }));
+    await wait(100);
+    const [x3, y3] = point(3, 0.5);
+    document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: x3, clientY: y3, pointerId: 1 }));
+    await wait(260);
+    const text = f.pane.selectedText();
+    if (!text) fail('没有选中任何文字');
+    if (!f.pane._partial) fail('没有记下字符偏移');
+    // 起点必须落在第一块中间（不是整块开头）
+    if (text.startsWith(firstText)) fail('还是从整块开头开始的');
+    if (!(f.pane._partial.fromOffset > 0)) fail('起点偏移是 0（等于从整块开头开始的）');
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x3, clientY: y3, pointerId: 1 }));
+    await wait(150);
+    return '从第 2 块中间开始选中，复制文本 ' + text.length + ' 字';
+  });
+
   await run('按住鼠标跨块拖拽可以选中多块', async () => {
     const note = ws.notesOf().find((n) => (n.content || '').split('\n\n').length >= 5);
     f.selectNote(note.id);

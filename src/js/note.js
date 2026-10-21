@@ -626,6 +626,9 @@ export class NotePane {
     this._anchorRange = (document.caretRangeFromPoint && this._downIndex != null)
       ? document.caretRangeFromPoint(e.clientX, e.clientY)
       : null;
+    this._anchorOffset = this._anchorRange ? this._offsetInBlock(this._anchorRange, this._downIndex) : 0;
+    this._partial = null;
+    this.clearPartialHighlight();
   }
 
   onPreviewPointerMove(e) {
@@ -635,25 +638,38 @@ export class NotePane {
     if (!blk) return;
     const idx = Number(blk.dataset.i);
     if (idx === this._downIndex && !this._dragSel) return;   // 同一块内交给浏览器
+    // 光标当前落在这个字符位置（跨块时用来算"精确到字"的终点）
+    const cur = document.caretRangeFromPoint
+      ? document.caretRangeFromPoint(e.clientX, e.clientY)
+      : null;
     const startBlk = this._blocks[this._downIndex];
     const txt = this.editableEl(this._downIndex);
-    if (!startBlk || !txt) return;
+    if (!startBlk) return;   // 起点块没了就放弃（源码块没有 .blk-txt 也照常走块级选择）
 
     const down = idx > this._downIndex;
-    try {
-      const range = document.createRange();
-      const anchor = this._anchorRange;
-      if (down) {
-        range.setStart(anchor.startContainer, anchor.startOffset);
-        range.setEnd(txt, txt.childNodes.length);      // 起点块里：从那个字选到块尾
-      } else {
-        range.setStart(txt, 0);
-        range.setEnd(anchor.startContainer, anchor.startOffset);
-      }
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-    } catch { /* 忽略 */ }
+    if (txt) {
+      try {
+        const range = document.createRange();
+        const anchor = this._anchorRange;
+        if (down) {
+          range.setStart(anchor.startContainer, anchor.startOffset);
+          range.setEnd(txt, txt.childNodes.length);    // 起点块里：从那个字选到块尾
+        } else {
+          range.setStart(txt, 0);
+          range.setEnd(anchor.startContainer, anchor.startOffset);
+        }
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } catch { /* 忽略 */ }
+    }
+
+    // 记下两端的字符偏移：块级高亮虽然只能整块，但复制/剪切可以精确到字
+    const endOffset = this._offsetInBlock(cur, idx);
+    this._partial = {
+      fromIndex: this._downIndex, fromOffset: this._anchorOffset,
+      toIndex: idx, toOffset: endOffset,
+    };
 
     // 其余块用块级高亮补齐；浏览器不给跨块文字选区时，把起点块也算进来
     const gotText = Boolean(window.getSelection && String(window.getSelection() || '').length);
@@ -664,6 +680,7 @@ export class NotePane {
     this._lastEdit = idx;
     this._dragSel = true;
     this.repaintSelection();
+    this.paintPartialHighlight();
   }
 
   onPreviewPointerUp() {
@@ -680,6 +697,102 @@ export class NotePane {
     for (const el of this.dom.preview.querySelectorAll('.blk')) {
       el.classList.toggle('sel', this._sel.has(Number(el.dataset.i)));
     }
+  }
+
+  /** 块内 [from, to) 字符区间对应的 Range */
+  _rangeInBlock(index, from, to) {
+    const txt = this.editableEl(index);
+    if (!txt) return null;
+    const walker = document.createTreeWalker(txt, NodeFilter.SHOW_TEXT);
+    let pos = 0;
+    let startNode = null;
+    let startOff = 0;
+    let endNode = null;
+    let endOff = 0;
+    let node = walker.nextNode();
+    while (node) {
+      const len = node.nodeValue.length;
+      if (!startNode && from <= pos + len) { startNode = node; startOff = Math.max(0, from - pos); }
+      if (to <= pos + len && startNode) { endNode = node; endOff = Math.max(0, to - pos); break; }
+      pos += len;
+      node = walker.nextNode();
+    }
+    if (!startNode) return null;
+    if (!endNode) { endNode = startNode; endOff = startNode.nodeValue.length; }
+    try {
+      const r = document.createRange();
+      r.setStart(startNode, startOff);
+      r.setEnd(endNode, endOff);
+      return r;
+    } catch { return null; }
+  }
+
+  clearPartialHighlight() {
+    if (this._hlLayer) { this._hlLayer.remove(); this._hlLayer = null; }
+  }
+
+  paintPartialHighlight() {
+    this.clearPartialHighlight();
+    const p = this._partial;
+    if (!p) return;
+    const layer = document.createElement('div');
+    layer.className = 'drag-layer';
+    this.dom.preview.appendChild(layer);
+    this._hlLayer = layer;
+    const box = this.dom.preview.getBoundingClientRect();
+    const put = (range) => {
+      if (!range) return;
+      for (const rc of range.getClientRects()) {
+        if (rc.width < 1 || rc.height < 1) continue;
+        const d = document.createElement('div');
+        d.className = 'drag-hl';
+        d.style.left = (rc.left - box.left) + 'px';
+        d.style.top = (rc.top - box.top + this.dom.preview.scrollTop) + 'px';
+        d.style.width = rc.width + 'px';
+        d.style.height = rc.height + 'px';
+        layer.appendChild(d);
+      }
+    };
+    const down = p.toIndex >= p.fromIndex;
+    if (down) {
+      put(this._rangeInBlock(p.fromIndex, p.fromOffset, (blockTextOf(this._blocks[p.fromIndex]) || '').length));
+      put(this._rangeInBlock(p.toIndex, 0, p.toOffset));
+    } else {
+      put(this._rangeInBlock(p.toIndex, p.toOffset, (blockTextOf(this._blocks[p.toIndex]) || '').length));
+      put(this._rangeInBlock(p.fromIndex, 0, p.fromOffset));
+    }
+  }
+
+  /** 某个 Range 的起点落在第 index 块的"第几个字符" */
+  _offsetInBlock(range, index) {
+    const txt = this.editableEl(index);
+    if (!txt || !range) return 0;
+    try {
+      const r = document.createRange();
+      r.selectNodeContents(txt);
+      r.setEnd(range.startContainer, range.startOffset);
+      return r.toString().length;
+    } catch { return 0; }
+  }
+
+  /** 按 `_partial` 拼出精确到字的文本（向下 / 向上都支持） */
+  _partialText() {
+    const p = this._partial;
+    if (!p) return '';
+    const text = (i) => (this._blocks[i] ? blockTextOf(this._blocks[i]) : '');
+    const down = p.toIndex >= p.fromIndex;
+    const lo = down ? p.fromIndex : p.toIndex;
+    const hi = down ? p.toIndex : p.fromIndex;
+    const out = [];
+    for (let i = lo; i <= hi; i += 1) {
+      let t = text(i);
+      if (i === lo && down && i === p.fromIndex) t = t.slice(p.fromOffset);
+      if (i === lo && !down && i === p.toIndex) t = t.slice(p.toOffset);
+      if (i === hi && down && i === p.toIndex) t = t.slice(0, p.toOffset);
+      if (i === hi && !down && i === p.fromIndex) t = t.slice(0, p.fromOffset);
+      out.push(t);
+    }
+    return out.filter(Boolean).join('\n\n');
   }
 
   /** 选中块（>1 时才算多选）：返回下标数组（从大到小，方便删） */
@@ -701,14 +814,10 @@ export class NotePane {
 
   /** 选中块的文本（按顺序拼） */
   selectedText() {
+    const precise = this._partialText();
+    if (precise) return precise;
     const picked = window.getSelection ? String(window.getSelection() || '') : '';
-    const parts = this.selectedIndexes()
-      .map((i) => this._blocks[i] && blockTextOf(this._blocks[i]))
-      .filter(Boolean);
-    if (picked) {
-      if (!parts.length) return picked;
-      const up = this._sel.size && Math.min(...this._sel) > (this._lastEdit || 0);
-    }
+    if (picked) return picked;
     return this.selectedIndexes()
       .map((i) => this._blocks[i] && blockTextOf(this._blocks[i]))
       .filter(Boolean)
