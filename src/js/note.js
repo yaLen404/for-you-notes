@@ -631,6 +631,28 @@ export class NotePane {
     this.clearPartialHighlight();
   }
 
+  /** 让整个预览临时变成一个可编辑宿主（跨块时蓝选区才能连起来） */
+  enterSpanMode() {
+    if (this._spanMode) return;
+    const list = this.dom.preview.querySelectorAll('.blk-txt');
+    list.forEach((el) => {
+      el.dataset.ce = el.getAttribute('contenteditable') || 'true';
+      el.setAttribute('contenteditable', 'false');
+    });
+    this.dom.preview.setAttribute('contenteditable', 'true');
+    this._spanMode = true;
+  }
+
+  exitSpanMode() {
+    if (!this._spanMode) return;
+    this.dom.preview.removeAttribute('contenteditable');
+    this.dom.preview.querySelectorAll('.blk-txt').forEach((el) => {
+      el.setAttribute('contenteditable', el.dataset.ce || 'true');
+      delete el.dataset.ce;
+    });
+    this._spanMode = false;
+  }
+
   onPreviewPointerMove(e) {
     if (this._downIndex == null || !this._anchorRange) return;
     const el = document.elementFromPoint(e.clientX, e.clientY);
@@ -647,24 +669,7 @@ export class NotePane {
     if (!startBlk) return;   // 起点块没了就放弃（源码块没有 .blk-txt 也照常走块级选择）
 
     const down = idx > this._downIndex;
-    if (txt) {
-      try {
-        const range = document.createRange();
-        const anchor = this._anchorRange;
-        if (down) {
-          range.setStart(anchor.startContainer, anchor.startOffset);
-          range.setEnd(txt, txt.childNodes.length);    // 起点块里：从那个字选到块尾
-        } else {
-          range.setStart(txt, 0);
-          range.setEnd(anchor.startContainer, anchor.startOffset);
-        }
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-      } catch { /* 忽略 */ }
-    }
-
-    // 记下两端的字符偏移：块级高亮虽然只能整块，但复制/剪切可以精确到字
+    // 端点字符偏移（精确复制用）
     const endOffset = this._offsetInBlock(cur, idx);
     this._partial = {
       fromIndex: this._downIndex, fromOffset: this._anchorOffset,
@@ -680,7 +685,6 @@ export class NotePane {
     this._lastEdit = idx;
     this._dragSel = true;
     this.repaintSelection();
-    this.paintPartialHighlight();
   }
 
   onPreviewPointerUp() {
