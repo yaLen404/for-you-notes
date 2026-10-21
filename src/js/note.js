@@ -580,7 +580,10 @@ export class NotePane {
       this.repaintSelection();
       return;
     }
-    if (this._sel.size) { this._sel.clear(); this.repaintSelection(); }
+    if (this._sel.size && !document.querySelector('.blk-menu')) {
+      this._sel.clear();
+      this.repaintSelection();
+    }
     const check = e.target.closest('.blk-check');
     if (check) { this.toggleTask(Number(check.dataset.i)); return; }
     if (e.target.closest('textarea')) return;
@@ -653,12 +656,13 @@ export class NotePane {
   /** 右键菜单：剪切 / 复制 / 粘贴 / 全选 + 转为 ▸ */
   openBlockContextMenu(index, x, y) {
     this.closeBlockMenu();
-    const multi = this._sel.size > 1;
+    // 只要有选中就按"选中"处理：不管右键落在哪一块，都不会把选中弄丢
+    const multi = this._sel.size >= 1;
     if (multi) {
       const m2 = document.createElement('div');
       m2.className = 'blk-menu';
       m2.innerHTML = [
-        '<button data-act="copy">复制选中 ' + this._sel.size + ' 块</button>',
+        '<button data-act="copy">' + (this._sel.size > 1 ? '复制选中 ' + this._sel.size + ' 块' : '复制这一块') + '</button>',
         '<button data-act="cut">剪切选中</button>',
         '<button data-act="del" class="danger">删除选中</button>',
       ].join('');

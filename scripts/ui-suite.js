@@ -738,6 +738,34 @@
     return items.join(' / ');
   });
 
+  await run('只选一块也能右键（选中不会被清掉）', async () => {
+    const note = ws.notesOf().find((n) => (n.content || '').split('\n\n').length >= 4);
+    f.selectNote(note.id);
+    await wait(320);
+    const blk = document.querySelector('#preview .blk[data-i="2"]');
+    const r = blk.getBoundingClientRect();
+    const x = Math.round(r.left + 12);
+    const y = Math.round(r.top + 8);
+    blk.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x, clientY: y, pointerId: 1, button: 0, shiftKey: true }));
+    blk.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x, clientY: y, pointerId: 1, shiftKey: true }));
+    blk.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: x, clientY: y, shiftKey: true }));
+    await wait(260);
+    if (!f.pane._sel.size) fail('Shift 点击没有选中');
+
+    // 真实右键：pointerdown(右键) → pointerup → contextmenu
+    blk.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x, clientY: y, pointerId: 1, button: 2, buttons: 2 }));
+    blk.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x, clientY: y, pointerId: 1, button: 2 }));
+    blk.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+    await wait(280);
+    if (!f.pane._sel.size) fail('右键之后选中被清掉了');
+    if (!document.querySelector('#preview .blk.sel')) fail('选中高亮没了');
+    const menu = document.querySelector('.blk-menu');
+    if (!menu) fail('右键没有菜单');
+    const del = [...menu.querySelectorAll('button')].find((b) => b.dataset.act === 'del');
+    if (!del) fail('菜单里没有"删除选中"');
+    return '单选 → 右键 → 仍可删除，选中数 ' + f.pane._sel.size;
+  });
+
   await run('Shift 点块可以多选，右键整体删除', async () => {
     const note = ws.notesOf().find((n) => (n.content || '').split('\n\n').length >= 4);
     f.selectNote(note.id);
