@@ -13,6 +13,10 @@ contextBridge.exposeInMainWorld('foryou', {
   backups: () => ipcRenderer.invoke('store:backups'),
   info: () => ipcRenderer.invoke('store:info'),
   openFolder: (which) => ipcRenderer.invoke('shell:open-folder', which),
+  clipboard: {
+    read: () => ipcRenderer.invoke('clipboard:read'),
+    write: (text) => ipcRenderer.invoke('clipboard:write', text),
+  },
   confirm: (title, message) => ipcRenderer.invoke('dialog:confirm', { title, message }),
 
   // 图片：存进 data/image/，界面只认文件名（不显示路径）

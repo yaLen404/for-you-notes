@@ -129,6 +129,12 @@ function register() {
     return true;
   });
 
+  ipcMain.handle('clipboard:read', () => require('electron').clipboard.readText() || '');
+  ipcMain.handle('clipboard:write', (_e, text) => {
+    require('electron').clipboard.writeText(String(text == null ? '' : text));
+    return true;
+  });
+
   ipcMain.handle('dialog:confirm', async (_e, { title, message }) => {
     const w = currentWindow();
     const result = await dialog.showMessageBox(w, {

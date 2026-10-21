@@ -989,23 +989,23 @@
     return '自动转换 / 缩进 / 跨块 / 粘贴拆块 都正常';
   });
 
-  await run('右键正文弹出块类型菜单；"/" 只是普通字符', async () => {
+  await run('右键正文：文本编辑菜单 + 「转为」子菜单；"/" 只是普通字符', async () => {
     const note = ws.notesOf().find((n) => (n.content || '').split('\n\n').length >= 2);
     f.selectNote(note.id);
-    await wait(260);
+    await wait(280);
     f.pane.appendBlock();
     await wait(300);
     const ed = activeEditor();
     if (!ed) fail('空块没有光标');
 
-    // 打一个 "/"：应该是普通字符，不弹菜单
+    // 打 "/"：普通字符，不弹菜单
     ed.innerHTML = '/';
     ed.dispatchEvent(new Event('input', { bubbles: true }));
-    await wait(250);
-    if (document.querySelector('.blk-menu.slash')) fail('打 / 还是弹菜单了');
-    if (!ws.note(note.id).content.includes('/')) fail('/ 没有当普通字符写进去');
+    await wait(220);
+    if (document.querySelector('.blk-menu')) fail('打 / 还是弹菜单了');
+    if (!ws.note(note.id).content.includes('/')) fail('/ 没写进内容');
 
-    // 右键这一块 → 块类型菜单
+    // 右键 → 文本编辑菜单
     const blk = ed.closest('.blk');
     const r = blk.getBoundingClientRect();
     blk.dispatchEvent(new MouseEvent('contextmenu', {
@@ -1013,17 +1013,29 @@
       clientX: Math.round(r.left + 12), clientY: Math.round(r.top + 10),
     }));
     await wait(260);
-    const menu = document.querySelector('.blk-menu.slash');
-    if (!menu) fail('右键没有弹出块类型菜单');
-    const types = [...menu.querySelectorAll('button')].map((b) => b.dataset.type);
-    for (const t of ['h1', 'h2', 'h3', 'bullet', 'num', 'task', 'quote', 'code', 'hr']) {
-      if (!types.includes(t)) fail('缺少块类型 ' + t);
+    const menu = document.querySelector('.blk-menu');
+    if (!menu) fail('右键没有弹出菜单');
+    const acts = [...menu.querySelectorAll('button')].map((b) => b.dataset.act).filter(Boolean);
+    for (const a of ['cut', 'copy', 'paste', 'select', 'type']) {
+      if (!acts.includes(a)) fail('右键菜单缺少 ' + a);
     }
-    const h2 = [...menu.querySelectorAll('button')].find((b) => b.dataset.type === 'h2');
+
+    // 悬停「转为」→ 子菜单
+    const typeBtn = menu.querySelector('[data-act="type"]');
+    typeBtn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    await wait(260);
+    const sub = document.querySelector('.blk-menu.sub');
+    if (!sub) fail('「转为」没有子菜单');
+    const types = [...sub.querySelectorAll('button')].map((b) => b.dataset.type);
+    for (const t of ['h1', 'h2', 'h3', 'bullet', 'num', 'task', 'quote', 'code', 'hr']) {
+      if (!types.includes(t)) fail('子菜单缺少块类型 ' + t);
+    }
+    const h2 = [...sub.querySelectorAll('button')].find((b) => b.dataset.type === 'h2');
     h2.click();
-    await wait(300);
-    if (!preview.querySelector('.blk-h2')) fail('转成标题后预览里没出现标题块');
-    return '右键出菜单，" / " 正常输入';
+    await wait(320);
+    if (!preview.querySelector('.blk-h2')) fail('转成标题 2 没生效');
+    if (document.querySelector('.blk-menu')) fail('选完菜单没关掉');
+    return '剪切/复制/粘贴/全选 + 转为子菜单，" / " 正常输入';
   });
 
   await run('在笔记里打字不会因为失焦丢内容', async () => {

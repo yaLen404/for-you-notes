@@ -637,3 +637,9 @@ html, body, #app, #canvas, #preview, .canvas, .preview, .pane {
 .body.canvas-wide .pane-right { display: none; }
 /* 左栏是按像素定宽的，宽画布时要让它自己撑满 */
 .body.canvas-wide .pane-left { flex: 1 1 auto !important; width: auto !important; }
+
+/* 右键菜单：常规文本编辑 + 「转为」子菜单 */
+.blk-menu .sep { height: 1px; background: var(--line); margin: 4px 2px; }
+.blk-menu .has-sub { display: flex; align-items: center; }
+.blk-menu .sub-arrow { margin-left: auto; padding-left: 10px; color: var(--faint); font-size: 11px; }
+.blk-menu.sub { z-index: 130; }

@@ -581,7 +581,7 @@ export class NotePane {
 
   onBlockDblClick() { /* 单击已经能进编辑，双击不再需要 */ }
 
-  /** 右键正文里的某一段 → 块类型菜单（"/" 现在就是普通字符） */
+  /** 右键正文里的某一段 → 文本编辑菜单（里面再嵌「转为」块类型子菜单） */
   onPreviewContextMenu(e) {
     const blk = e.target.closest && e.target.closest('.blk');
     if (!blk) return;
@@ -589,7 +589,123 @@ export class NotePane {
     const index = Number(blk.dataset.i);
     this._focus = index;
     this._lastEdit = index;
-    this.openSlashMenu(index, { left: e.clientX, bottom: e.clientY });
+    this.openBlockContextMenu(index, e.clientX, e.clientY);
+  }
+
+  /** 右键菜单：剪切 / 复制 / 粘贴 / 全选 + 转为 ▸ */
+  openBlockContextMenu(index, x, y) {
+    this.closeBlockMenu();
+    const menu = document.createElement('div');
+    menu.className = 'blk-menu';
+    menu.innerHTML = [
+      '<button data-act="cut">剪切</button>',
+      '<button data-act="copy">复制</button>',
+      '<button data-act="paste">粘贴</button>',
+      '<button data-act="select">全选</button>',
+      '<div class="sep"></div>',
+      '<button data-act="type" class="has-sub">转为<span class="sub-arrow">▸</span></button>',
+    ].join('');
+    menu.style.left = Math.max(6, Math.min(window.innerWidth - 160, x)) + 'px';
+    menu.style.top = Math.max(6, Math.min(window.innerHeight - 190, y)) + 'px';
+    document.body.appendChild(menu);
+    this._menuEl = menu;
+
+    menu.addEventListener('mousedown', (ev) => ev.preventDefault());
+    menu.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('button');
+      if (!btn) return;
+      const act = btn.dataset.act;
+      if (act === 'type') { this.openTypeSubMenu(index, btn); return; }
+      this.closeBlockMenu();
+      if (act === 'cut') this.cutBlock(index);
+      else if (act === 'copy') this.copyBlock(index);
+      else if (act === 'paste') this.pasteBlock(index);
+      else if (act === 'select') this.selectBlock(index);
+    });
+    const typeBtn = menu.querySelector('[data-act="type"]');
+    typeBtn.addEventListener('mouseenter', () => this.openTypeSubMenu(index, typeBtn));
+
+    setTimeout(() => {
+      window.addEventListener('pointerdown', this._closeMenuOnOutside, true);
+    }, 0);
+  }
+
+  /** 「转为」子菜单：跟在右键菜单右边 */
+  openTypeSubMenu(index, anchor) {
+    if (this._subEl) { this._subEl.remove(); this._subEl = null; }
+    const items = [
+      ['p', '正文'], ['h1', '标题 1'], ['h2', '标题 2'], ['h3', '标题 3'],
+      ['bullet', '无序列表'], ['num', '有序列表'], ['task', '待办'],
+      ['quote', '引用'], ['code', '代码块'], ['math', '公式'], ['hr', '分割线'],
+    ];
+    const sub = document.createElement('div');
+    sub.className = 'blk-menu slash sub';
+    sub.innerHTML = items.map(([t, label]) => '<button data-type="' + t + '">' + label + '</button>').join('');
+    const r = anchor.getBoundingClientRect();
+    sub.style.left = Math.max(6, Math.min(window.innerWidth - 170, r.right + 2)) + 'px';
+    sub.style.top = Math.max(6, Math.min(window.innerHeight - 300, r.top - 4)) + 'px';
+    document.body.appendChild(sub);
+    this._subEl = sub;
+    sub.addEventListener('mousedown', (ev) => ev.preventDefault());
+    sub.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('button');
+      if (!btn) return;
+      const type = btn.dataset.type;
+      this.closeBlockMenu();
+      this.convertBlock(index, type);
+    });
+  }
+
+  /** 这一块的纯文本（没选区时当作"整块"） */
+  blockText(index) {
+    const txt = this.editableEl(index);
+    return txt ? txt.textContent : '';
+  }
+
+  selectBlock(index) {
+    const txt = this.editableEl(index);
+    if (!txt) return;
+    txt.focus();
+    const range = document.createRange();
+    range.selectNodeContents(txt);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    this._focus = index;
+  }
+
+  async copyBlock(index) {
+    const sel = window.getSelection();
+    const picked = sel && !sel.isCollapsed ? sel.toString() : '';
+    const clip = window.foryou && window.foryou.clipboard;
+    if (clip) await clip.write(picked || this.blockText(index));
+  }
+
+  async cutBlock(index) {
+    const sel = window.getSelection();
+    const picked = sel && !sel.isCollapsed ? sel.toString() : '';
+    const clip = window.foryou && window.foryou.clipboard;
+    if (clip) await clip.write(picked || this.blockText(index));
+    const txt = this.editableEl(index);
+    if (!txt) return;
+    if (picked) {
+      document.execCommand('delete');
+    } else {
+      txt.textContent = '';
+      this.writeBack();
+      this.renderBlocks();
+    }
+    this.syncInline(index);
+  }
+
+  async pasteBlock(index) {
+    const clip = window.foryou && window.foryou.clipboard;
+    if (!clip) return;
+    const text = await clip.read();
+    if (!text) return;
+    this.focusBlock(index, 'end');
+    this.insertIntoEditable(text);
+    this.syncInline(index);
   }
 
   onPreviewKey(e) {
@@ -754,6 +870,7 @@ export class NotePane {
   }
 
   closeBlockMenu() {
+    if (this._subEl) { this._subEl.remove(); this._subEl = null; }
     if (this._menuEl) { this._menuEl.remove(); this._menuEl = null; }
     if (this._closeMenuOnOutside) {
       window.removeEventListener('pointerdown', this._closeMenuOnOutside, true);
