@@ -14,9 +14,12 @@
   const activeEditor = () => {
     const ta = document.querySelector('#preview .blk.is-editing textarea');
     if (ta) return ta;
-    const ae = document.activeElement;
-    const txt = ae && ae.closest ? ae.closest('.blk-txt') : null;
-    return txt || null;
+    // 单宿主：焦点在 #preview，当前块由选区决定
+    const sel = window.getSelection();
+    const node = sel && sel.anchorNode;
+    const el = node ? (node.nodeType === 1 ? node : node.parentElement) : null;
+    const blk = el && el.closest ? el.closest('.blk') : null;
+    return blk ? blk.querySelector('.blk-txt') : null;
   };
   const activeTA = activeEditor;   // 老名字，保留给已有用例
   const esc = (s) => String(s)
