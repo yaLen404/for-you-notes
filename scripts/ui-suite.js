@@ -754,7 +754,9 @@
     document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: x4, clientY: y4, pointerId: 1 }));
     await wait(200);
     document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x4, clientY: y4, pointerId: 1 }));
-    await wait(180);
+    // 浏览器抬手后还会补一个 click，它不能把刚选中的块清掉
+    blkOf(4).dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: x4, clientY: y4 }));
+    await wait(200);
     const sel = [...f.pane._sel].sort((a, b) => a - b);
     if (sel.join(',') !== '1,2,3,4') fail('跨块拖拽没选中 1-4：' + sel.join(','));
     if (document.querySelectorAll('#preview .blk.sel').length !== 4) fail('高亮数量不对');

@@ -562,6 +562,7 @@ export class NotePane {
 
   // ---------------------------------------------------------------- 点击 / 键盘
   onBlockClick(e) {
+    if (this._justDragged) { this._justDragged = false; return; }
     // Shift / Ctrl + 点击：块级多选（不进编辑）
     const hitBlk = e.target.closest && e.target.closest('.blk');
     if (hitBlk && (e.shiftKey || e.ctrlKey || e.metaKey)) {
@@ -620,6 +621,7 @@ export class NotePane {
     const blk = e.target.closest && e.target.closest('.blk');
     this._downIndex = blk ? Number(blk.dataset.i) : null;
     this._dragSel = false;
+    this._justDragged = false;
   }
 
   onPreviewPointerMove(e) {
@@ -642,7 +644,11 @@ export class NotePane {
   }
 
   onPreviewPointerUp() {
-    if (this._dragSel) this.repaintSelection();
+    if (this._dragSel) {
+      this.repaintSelection();
+      // 抬手后浏览器还会补一个 click，别让它把刚选中的块清掉
+      this._justDragged = true;
+    }
     this._downIndex = null;
     this._dragSel = false;
   }
