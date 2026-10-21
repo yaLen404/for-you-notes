@@ -205,7 +205,7 @@ export class NotePane {
     if (!txt) return false;
     const range = document.createRange();
     range.selectNodeContents(txt);
-    range.collapse(where !== 'start');
+    range.collapse(where === 'start');
     const sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
@@ -418,7 +418,20 @@ export class NotePane {
     if (index == null) return;
     const txt = this.editableEl(index);
     const sel = window.getSelection();
-    if (!txt || !sel || !sel.rangeCount) return;
+    if (!txt) return;
+    const cur0 = this._blocks[index];
+    if (!cur0) return;
+    // 光标不在这块文本里（比如刚点击过宿主）：当成"在块尾回车"
+    const r0 = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
+    if (!r0 || !txt.contains(r0.startContainer)) {
+      const t0 = ['h1', 'h2', 'h3'].includes(cur0.type) ? 'p' : cur0.type;
+      this._blocks.splice(index + 1, 0, { type: t0, inline: '', depth: cur0.depth || 0, done: false });
+      this.writeBack();
+      this.renderBlocks();
+      this.focusBlock(index + 1, 'start');
+      return;
+    }
+    if (!sel || !sel.rangeCount) return;
     const range = sel.getRangeAt(0);
     const before = document.createRange();
     before.selectNodeContents(txt);

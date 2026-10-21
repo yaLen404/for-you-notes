@@ -863,6 +863,31 @@
     return '选中 3 块 → 删除，' + before + ' → ' + f.pane._blocks.length;
   });
 
+  await run('单宿主：文字选区可以跨块（原生选区）', async () => {
+    const note = ws.notesOf().find((n) => (n.content || '').split('\n\n').length >= 4);
+    f.selectNote(note.id);
+    await wait(320);
+    const blocks = [...document.querySelectorAll('#preview .blk')];
+    const txts = blocks.map((b) => b.querySelector('.blk-txt')).filter(Boolean);
+    if (txts.length < 3) fail('块不够');
+    const a = txts[0];
+    const b = txts[2];
+    const range = document.createRange();
+    range.setStart(a.firstChild || a, 2);
+    range.setEnd(b.firstChild || b, 4);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    await wait(120);
+    const picked = sel.toString();
+    if (!picked) fail('跨块选区拿不到文字');
+    if (!picked.includes('\n')) fail('选区没有跨过多个块：' + JSON.stringify(picked.slice(0, 30)));
+    // 复制跟随选区
+    const text = f.pane.selectedText();
+    if (!text) fail('selectedText 为空');
+    return '跨 3 块选区，文字 ' + picked.length + ' 字（含换行）';
+  });
+
   await run('点正文空白处，光标落到最后一块', async () => {
     const note = ws.notesOf().find((n) => (n.content || '').length > 20);
     f.selectNote(note.id);
@@ -878,8 +903,12 @@
     target.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: x, clientY: y }));
     await wait(340);
     if (f.pane._focus !== lastIndex) fail('没落到最后一块：' + f.pane._focus + ' / 最后 ' + lastIndex);
-    const ae = document.activeElement;
-    if (!ae || !ae.closest || !ae.closest('.blk[data-i="' + lastIndex + '"]')) {
+    // 单宿主：焦点在 #preview，光标位置看选区
+    const sel = window.getSelection();
+    const node = sel && sel.anchorNode;
+    const el = node ? (node.nodeType === 1 ? node : node.parentElement) : null;
+    const blk = el && el.closest ? el.closest('.blk') : null;
+    if (!blk || Number(blk.dataset.i) !== lastIndex) {
       fail('光标不在最后一块里');
     }
     return '空白处点击 → 最后一块（第 ' + (lastIndex + 1) + ' 块）';
